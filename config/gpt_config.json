@@ -1,0 +1,7 @@
+{
+    "model_type": "gpt2", 
+    "vocab_size": 50257, 
+    "block_size": 1024, 
+
+    "use_compile": false
+}

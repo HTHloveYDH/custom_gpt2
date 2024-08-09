@@ -1,0 +1,5 @@
+{
+    "seed": 1337, 
+    "max_length": 32,
+    "num_return_sequences": 4
+}

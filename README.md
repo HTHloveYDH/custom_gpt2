@@ -1,4 +1,4 @@
-## lanuch task
+## lanuch training task
 ```bash
 # [reference]: https://www.youtube.com/watch?v=KaAJtI1T2x4&list=PL_lsbAsL_o2CSuhUhJIiW0IkdT5C2wGWj
 ```
@@ -26,6 +26,11 @@ torchrun --nproc_per_node=8 --nnodes=2 -node_rank=0 --rdzv_backend=c10d --rdzv_e
 ```bash
 # on node 1#
 torchrun --nproc_per_node=8 --nnodes=2 -node_rank=1 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --ddp_world_size 8
+```
+
+## lanuch generation task
+```bash
+python gen/main.py
 ```
 
 ## GPT configs:

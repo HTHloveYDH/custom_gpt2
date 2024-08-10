@@ -49,7 +49,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     data_format = data_config['data_format']
     # gpt configs
     use_compile = gpt_config['use_compile']
-    # set up DP (distributed data parallel or fully \sharded data parallel).
+    # set up DP (distributed data parallel or fully sharded data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
     dp = dist_strategy in ['ddp', 'fsdp']
     dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_dist(

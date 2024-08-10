@@ -15,7 +15,7 @@ def load_config_from_json(mode:str):
         train_config = load_json(os.path.join('.', 'config', 'train_config.json'))
         data_config = load_json(os.path.join('.', 'config', 'data_config.json'))
         return gpt_config, train_config, data_config, cloud_config, dist_config
-    elif mode == 'test':
+    elif mode == 'gen':
         test_config = load_json(os.path.join('.', 'config', 'test_config.json'))
         return gpt_config, test_config, cloud_config, dist_config
     else:

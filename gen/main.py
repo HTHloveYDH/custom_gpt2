@@ -13,7 +13,7 @@ from utils.load_config import load_config_from_json as load_configs
 
 def main():
     ''' __________________________________________ setup _____________________________________________ '''
-    gpt_config, test_config, cloud_config, dist_config = load_configs('test')
+    gpt_config, test_config, cloud_config, dist_config = load_configs('gen')
     # train configs
     seed = test_config['seed']  # defaults to 1337
     max_length = test_config['max_length']

@@ -1,25 +1,23 @@
-import os
-
 import torch
-from torch.distributed import init_process_group, destroy_process_group
+
+from dist.ddp import init_ddp, ternimate_ddp
+from dist.fsdp import init_fsdp, ternimate_fsdp
 
 
-def init_dist(ddp):
-    if ddp:
-        # use of DDP atm demands CUDA, we set the device appropriately according to rank
-        assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
-        init_process_group(backend='nccl')
-        ddp_rank = int(os.environ['RANK'])
-        ddp_local_rank = int(os.environ['LOCAL_RANK'])
-        ddp_world_size = int(os.environ['WORLD_SIZE'])
-        device = f'cuda:{ddp_local_rank}'
-        torch.cuda.set_device(device)
-        master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
+def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
+    if dist_strategy == 'ddp':
+        dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_ddp(
+            torch_mp_launch, dp_local_rank, dp_world_size
+        )
+    elif dist_strategy == 'fsdp':
+        dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_fsdp(
+            torch_mp_launch, dp_local_rank, dp_world_size
+        )
     else:
         # vanilla, non-DDP run
-        ddp_rank = 0
-        ddp_local_rank = 0
-        ddp_world_size = 1
+        dp_global_rank = 0
+        dp_local_rank = 0
+        dp_world_size = 1
         master_process = True
         # attempt to autodetect device
         device = "cpu"
@@ -28,9 +26,12 @@ def init_dist(ddp):
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             device = "mps"
         print(f"using device: {device}")
-    # added after video, pytorch can be serious about it's device vs. device_type distinction
-    device_type = "cuda" if device.startswith("cuda") else "cpu"
-    return ddp_rank, ddp_local_rank, ddp_world_size, master_process, device, device_type
+    return dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type
 
-def ternimate_dist():
-    destroy_process_group()
+def ternimate_dist(dist_strategy:str):
+    if dist_strategy == 'ddp':
+        ternimate_ddp()
+    elif dist_strategy == 'fsdp':
+        ternimate_fsdp()
+    else:
+        pass

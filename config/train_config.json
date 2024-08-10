@@ -12,5 +12,7 @@
     "warmup_steps": 715, 
     "seed": 1337, 
     "max_length": 32, 
-    "num_return_sequences": 4 
+    "num_return_sequences": 4, 
+
+    "save_interval": 250
 }

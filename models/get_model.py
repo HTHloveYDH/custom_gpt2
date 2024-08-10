@@ -1,11 +1,12 @@
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
+import tiktoken
 
 from models.GPT import GPT
 from config.GPTConfig import GPTConfig
 
 
-def get_model(gpt_config, device, ddp:bool, ddp_local_rank:int):
+def get_model(gpt_config, device, dp:bool, device_ids:list):
     # create model
     config_args = {
         'gpt2': dict(n_layer=12, n_head=12, n_embd=768),  # 124M params
@@ -21,7 +22,8 @@ def get_model(gpt_config, device, ddp:bool, ddp_local_rank:int):
     use_compile = False # torch.compile interferes with HellaSwag eval and Generation. TODO fix
     if use_compile:
         model = torch.compile(model)
-    if ddp:
-        model = DDP(model, device_ids=[ddp_local_rank])
-    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
-    return model, raw_model
+    if dp:
+        model = DDP(model, device_ids=device_ids)
+    raw_model = model.module if dp else model # always contains the "raw" unwrapped model
+    enc = tiktoken.get_encoding('gpt2')
+    return model, raw_model, enc

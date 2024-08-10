@@ -20,10 +20,15 @@ def get_lr(it, max_lr = 6e-4, warmup_steps = 715, max_steps = 19073):
     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
     return min_lr + coeff * (max_lr - min_lr)
 
+def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_type:str):
+    # get optimizer!
+    optimizer = raw_model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4, device_type=device_type)
+    return optimizer
+
 
 def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int, max_lr:int, \
                            warmup_steps:int, max_steps:int, device, device_type:str, master_process:bool, \
-                           ddp:bool, ddp_world_size:int, global_grad_accum_stage:int, log_file:str):
+                           dp:bool, dp_world_size:int, global_grad_accum_stage:int, log_file:str):
     t0 = time.time()
     # do grad_accum_steps steps of the optimization
     model.train()
@@ -33,7 +38,7 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
         x, y = train_loader.next_batch()
         x, y = x.to(device), y.to(device)
         # added after video, this field is also used by the forward pass.
-        if ddp:
+        if dp:
             model.require_backward_grad_sync = (micro_step == grad_accum_steps - 1)
         with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
             logits, loss = model(x, y)
@@ -44,7 +49,7 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
         loss = loss / grad_accum_steps
         loss_accum += loss.detach()
         loss.backward()
-    if ddp:
+    if dp:
         dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)
     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
     # determine and set the learning rate for this iteration
@@ -57,7 +62,7 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
         torch.cuda.synchronize() # wait for the GPU to finish work
     t1 = time.time()
     dt = t1 - t0 # time difference in seconds
-    tokens_processed = train_loader.B * train_loader.T * grad_accum_steps * ddp_world_size
+    tokens_processed = train_loader.B * train_loader.T * grad_accum_steps * dp_world_size
     tokens_per_sec = tokens_processed / dt
     if master_process:
         print(f"global_step {global_step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | tok/sec: {tokens_per_sec:.2f}")
@@ -65,7 +70,7 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
             f.write(f"{global_step} train {loss_accum.item():.6f}\n")
 
 
-def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, master_process:bool, ddp:bool, \
+def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, master_process:bool, dp:bool, \
                      val_steps:int, global_grad_accum_stage:int, last_grad_accum_stage:int, log_file:str, \
                      log_dir:str):
     model.eval()
@@ -79,7 +84,7 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
                 logits, loss = model(x, y)
             loss = loss / val_steps
             val_loss_accum += loss.detach()
-    if ddp:
+    if dp:
         dist.all_reduce(val_loss_accum, op=dist.ReduceOp.AVG)
     if master_process:
         print(f"validation loss: {val_loss_accum.item():.4f}")
@@ -88,12 +93,20 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
         if global_grad_accum_stage > 0 and (global_grad_accum_stage % 5000 == 0 or last_grad_accum_stage):
             # optionally write model checkpoints
             checkpoint_path = os.path.join(log_dir, f"model_{global_grad_accum_stage:05d}.pt")
-            checkpoint = {
-                'model': raw_model.state_dict(),
-                'config': raw_model.config,
-                'global_grad_accum_stage': global_grad_accum_stage,
-                'val_loss': val_loss_accum.item()
-            }
-            # you might also want to add optimizer.state_dict() and
-            # rng seeds etc., if you wanted to more exactly resume training
-            torch.save(checkpoint, checkpoint_path)
+            save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
+
+def save_ckpt(model, global_grad_accum_stage:int, val_loss_accum:float, checkpoint_path:str):
+    checkpoint = {
+        'model': model.state_dict(),
+        'config': model.config,
+        'global_grad_accum_stage': global_grad_accum_stage,
+        'val_loss': val_loss_accum
+    }
+    # you might also want to add optimizer.state_dict() and
+    # rng seeds etc., if you wanted to more exactly resume training
+    torch.save(checkpoint, checkpoint_path)
+
+def resume_from_ckpt(model, checkpoint_path:str):
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint['model'])
+    return model

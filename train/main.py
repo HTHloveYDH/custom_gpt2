@@ -125,6 +125,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
                 )
     ternimate_dist(dist_strategy)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple distributed training job')
     parser.add_argument('--ddp_world_size', type=int, help='Total processes to train the model')

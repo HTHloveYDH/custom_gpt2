@@ -39,6 +39,7 @@ def get_model(gpt_config, device, dist_strategy:str, device_ids:list):
     if dist_strategy == 'ddp':
         model = DDP(model, device_ids=device_ids)
     elif dist_strategy == 'fsdp':
+        # reference: https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html#how-to-use-fsdp
         model = FSDP(model)
         # my_auto_wrap_policy = functools.partial(size_based_auto_wrap_policy, min_num_params=100)
         # model = FSDP(

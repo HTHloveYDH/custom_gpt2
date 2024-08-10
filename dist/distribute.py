@@ -7,7 +7,7 @@ from torch.distributed import init_process_group, destroy_process_group
 def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
     if dist_strategy in ['ddp', 'fsdp']:
         # use of FSDP or DDP demands CUDA, we set the device appropriately according to rank
-        assert torch.cuda.is_available(), 'for now i think we need CUDA for DDP'
+        assert torch.cuda.is_available(), 'for now i think we need CUDA for DDP or FSDP'
         # launch by torch.multiprocessing
         if torch_mp_launch:
             os.environ['MASTER_ADDR'] = 'localhost'

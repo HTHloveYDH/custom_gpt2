@@ -25,7 +25,6 @@ def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_typ
     optimizer = raw_model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4, device_type=device_type)
     return optimizer
 
-
 def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int, max_lr:int, \
                            warmup_steps:int, max_steps:int, device, device_type:str, master_process:bool, \
                            dp:bool, dp_world_size:int, global_grad_accum_stage:int, log_file:str):

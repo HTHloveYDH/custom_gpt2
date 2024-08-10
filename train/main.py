@@ -123,7 +123,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
                 gen_sentences(
                     model, enc, x, device, device_type, num_return_sequences, max_length, dp_global_rank
                 )
-    ternimate_dist()
+    ternimate_dist(dist_strategy)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple distributed training job')

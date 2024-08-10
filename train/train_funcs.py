@@ -6,7 +6,7 @@ import torch
 import torch.distributed as dist
 
 
-def get_lr(it, max_lr = 6e-4, warmup_steps = 715, max_steps = 19073):
+def _get_lr(it, max_lr = 6e-4, warmup_steps = 715, max_steps = 19073):
     min_lr = max_lr * 0.1
     # 1) linear warmup for warmup_iters steps
     if it < warmup_steps:
@@ -22,7 +22,9 @@ def get_lr(it, max_lr = 6e-4, warmup_steps = 715, max_steps = 19073):
 
 def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_type:str):
     # get optimizer!
-    optimizer = raw_model.configure_optimizers(weight_decay=0.1, learning_rate=6e-4, device_type=device_type)
+    optimizer = raw_model.configure_optimizers(
+        weight_decay=weight_decay, learning_rate=learning_rate, device_type=device_type
+    )
     return optimizer
 
 def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int, max_lr:int, \
@@ -53,7 +55,7 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
     # determine and set the learning rate for this iteration
     global_step = (global_grad_accum_stage + 1) * grad_accum_steps - 1
-    lr = get_lr(global_step, max_lr, warmup_steps, max_steps)
+    lr = _get_lr(global_step, max_lr, warmup_steps, max_steps)
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     optimizer.step()
@@ -92,11 +94,11 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
         if global_grad_accum_stage > 0 and (global_grad_accum_stage % 5000 == 0 or last_grad_accum_stage):
             # optionally write model checkpoints
             curr_model_path = os.path.join(log_dir, f'model_{global_grad_accum_stage:05d}.pt')
-            save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
+            _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
             checkpoint_path = os.path.join(ckpt_dir, f'model.pt')
-            save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
+            _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
 
-def save_ckpt(model, global_grad_accum_stage:int, val_loss_accum:float, checkpoint_path:str):
+def _save_ckpt(model, global_grad_accum_stage:int, val_loss_accum:float, checkpoint_path:str):
     checkpoint = {
         'model': model.state_dict(),
         'config': model.config,

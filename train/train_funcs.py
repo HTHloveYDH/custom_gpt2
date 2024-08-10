@@ -93,8 +93,8 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
             f.write(f'{global_grad_accum_stage} val {val_loss_accum.item():.4f}\n')
         if global_grad_accum_stage > 0 and (global_grad_accum_stage % 5000 == 0 or last_grad_accum_stage):
             # optionally write model checkpoints
-            curr_model_path = os.path.join(log_dir, f'model_{global_grad_accum_stage:05d}.pt')
-            _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
+            save_curr_model_path = os.path.join(log_dir, f'model_{global_grad_accum_stage:05d}.pt')
+            _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), save_curr_model_path)
             checkpoint_path = os.path.join(ckpt_dir, f'model.pt')
             _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), checkpoint_path)
 

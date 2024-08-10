@@ -14,5 +14,6 @@
     "max_length": 32, 
     "num_return_sequences": 4, 
 
-    "save_interval": 250
+    "save_interval": 250,
+    "ckpt_dir": "./ckpt/"
 }

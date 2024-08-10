@@ -9,7 +9,7 @@ sys.path.append(os.getcwd())
 from dist.distribute import init_dist, ternimate_dist
 from data_pipeline.DataLoaderLiteFactory import DataLoaderLiteFactory
 from models.get_model import get_model
-from train.train_funcs import train_grad_accum_steps, valid_epoch_wise, get_optimizer
+from train.train_funcs import train_grad_accum_steps, valid_epoch_wise, get_optimizer, resume_from_ckpt
 from gen.gen_funcs import gen_sentences
 from utils.load_config import load_config_from_json as load_configs
 
@@ -42,6 +42,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     max_length = train_config['max_length']
     num_return_sequences = train_config['num_return_sequences']
     save_interval = train_config['save_interval']
+    ckpt_dir = train_config['ckpt_dir']
     # data configs
     data_root = data_config['data_root']
     data_format = data_config['data_format']
@@ -95,6 +96,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     # start train loop
     max_grad_accum_stages = epochs * grad_accum_stages_per_epoch
     max_steps = max_grad_accum_stages * grad_accum_steps
+    resume_from_ckpt(raw_model, ckpt_dir)
     for epoch in range(epochs):
         print(f'epoch: {epoch} / {epochs}:')
         for grad_accum_stage in range(grad_accum_stages_per_epoch):
@@ -109,7 +111,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
             if global_grad_accum_stage % save_interval == 0 or last_grad_accum_stage:
                 valid_epoch_wise(
                     model, raw_model, val_loader, device, device_type, master_process, dp, val_steps, 
-                    global_grad_accum_stage, last_grad_accum_stage, log_file, log_dir
+                    global_grad_accum_stage, last_grad_accum_stage, ckpt_dir, log_file, log_dir
                 )
             # once in a while generate from the model (except step 0, which is noise)
             if (global_grad_accum_stage % save_interval == 0 or last_grad_accum_stage) and (not use_compile):

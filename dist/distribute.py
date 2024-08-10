@@ -1,19 +1,31 @@
-import torch
+import os
 
-from dist.ddp import init_ddp, ternimate_ddp
-from dist.fsdp import init_fsdp, ternimate_fsdp
+import torch
+from torch.distributed import init_process_group, destroy_process_group
 
 
 def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
-    if dist_strategy == 'ddp':
-        dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_ddp(
-            torch_mp_launch, dp_local_rank, dp_world_size
-        )
-    elif dist_strategy == 'fsdp':
-        dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_fsdp(
-            torch_mp_launch, dp_local_rank, dp_world_size
-        )
-    else:
+    if dist_strategy in ['ddp', 'fsdp']:
+        # use of FSDP or DDP demands CUDA, we set the device appropriately according to rank
+        assert torch.cuda.is_available(), 'for now i think we need CUDA for DDP'
+        # launch by torch.multiprocessing
+        if torch_mp_launch:
+            os.environ['MASTER_ADDR'] = 'localhost'
+            os.environ['MASTER_PORT'] = '12355'
+            init_process_group(backend='nccl', rank=dp_local_rank, world_size=dp_world_size)
+            dp_global_rank = dp_local_rank
+        # lanuch by torchrun
+        else:
+            init_process_group(backend='nccl')
+            dp_global_rank = int(os.environ['RANK'])
+            dp_local_rank = int(os.environ['LOCAL_RANK'])
+            dp_world_size = int(os.environ['WORLD_SIZE'])
+        master_process = dp_global_rank == 0 # this process will do logging, checkpointing etc.
+        # added after video, pytorch can be serious about it's device vs. device_type distinction
+        device = f'cuda:{dp_local_rank}'
+        torch.cuda.set_device(device)
+        device_type = 'cuda' if device.startswith('cuda') else 'cpu'
+    elif dist_strategy in ['default']:
         # vanilla, non-DDP run
         dp_global_rank = 0
         dp_local_rank = 0
@@ -29,9 +41,7 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
     return dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type
 
 def ternimate_dist(dist_strategy:str):
-    if dist_strategy == 'ddp':
-        ternimate_ddp()
-    elif dist_strategy == 'fsdp':
-        ternimate_fsdp()
+    if dist_strategy in ['ddp', 'fsdp']:
+        destroy_process_group()
     else:
         pass

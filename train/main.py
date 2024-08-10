@@ -26,6 +26,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     gpt_config, train_config, data_config, cloud_config, dist_config = load_configs('train')
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
+    assert dist_strategy in ['ddp', 'fssdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
     # train configs
     learning_rate = train_config['learning_rate']  # defaults to 6e-4
     weight_decay = train_config['weight_decay']  # defaults to 0.1
@@ -88,7 +89,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
 
     ''' ____________________________________ build & compile model ___________________________________ '''
     device_ids = [dp_local_rank]
-    model, raw_model, enc = get_model(gpt_config, device, dp, device_ids)
+    model, raw_model, enc = get_model(gpt_config, device, dist_strategy, device_ids)
 
     ''' ____________________________________________ train ___________________________________________ '''
     # get optimizer

@@ -1,4 +1,5 @@
-## lanuch task
+## lanuch task 
+[reference]: https://www.youtube.com/watch?v=KaAJtI1T2x4&list=PL_lsbAsL_o2CSuhUhJIiW0IkdT5C2wGWj
 ### simple launch on one node:
 ```bash
 python train/main.py --ddp_world_size 1

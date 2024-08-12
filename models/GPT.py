@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from models.modules import Block
+from models.modules import CausalSelfAttention
 from config.GPTConfig import GPTConfig
 
 
@@ -24,18 +25,7 @@ class GPT(nn.Module):
         # weight sharing scheme
         self.transformer.wte.weight = self.lm_head.weight
         # init params
-        self.apply(self.init_weights)
-
-    def init_weights(self, module):
-        if isinstance(module, nn.Linear):
-            std = 0.02
-            if hasattr(module, 'IS_INIT_SCALE'):
-                std *= (2 * self.config.n_layer) ** -0.5
-            torch.nn.init.normal_(module.weight, mean=0.0, std=std)  # 1 / sqrt(768) = 0.036, sqrt(1600) = 0.025
-            if module.bias is not None:
-                torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, nn.Embedding):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+        self.apply(self._init_weights)
 
     def forward(self, x, y=None):
         # both x and y are of shape (B, T)
@@ -103,8 +93,22 @@ class GPT(nn.Module):
                 assert sd_hf[k].shape == sd[k].shape
                 with torch.no_grad():
                     sd[k].copy_(sd_hf[k])
-
         return model
+
+    def _init_weights(self, module):
+        if isinstance(module, nn.Linear):
+            std = 0.02
+            if hasattr(module, 'IS_INIT_SCALE'):
+                std *= (2 * self.config.n_layer) ** -0.5
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)  # 1 / sqrt(768) = 0.036, sqrt(1600) = 0.025
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, nn.Embedding):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+
+    def enable_kv_cache(self, module):
+        if isinstance(module, CausalSelfAttention):
+            module.set_forward_once_to_kv_cache()
 
     def configure_optimizers(self, weight_decay, learning_rate, device_type, master_process):
         # start with all of the candidate parameters (that require grad)

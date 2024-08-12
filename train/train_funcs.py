@@ -48,10 +48,11 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
         # addition of gradients corresponds to a SUM in the objective, but
         # instead of a SUM we want MEAN. Scale the loss here so it comes out right
         loss = loss / grad_accum_steps
-        loss_accum += loss.detach()
+        loss_accum += loss.detach()  # loss in a single gradient accumulation stage
         loss.backward()
     if dp:
-        dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)
+        # loss_accum = (Sigma 0 -> (process_num - 1): (local_rank_loss / grad_accum_steps)) / process_num
+        dist.all_reduce(loss_accum, op=dist.ReduceOp.AVG)  # all_reduce (mean)
     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
     # determine and set the learning rate for this iteration
     global_step = (global_grad_accum_stage + 1) * grad_accum_steps - 1
@@ -86,7 +87,8 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
             loss = loss / val_steps
             val_loss_accum += loss.detach()
     if dp:
-        dist.all_reduce(val_loss_accum, op=dist.ReduceOp.AVG)
+        # val_loss_accum = (Sigma 0 -> (process_num - 1): (local_rank_loss / val_steps)) / process_num
+        dist.all_reduce(val_loss_accum, op=dist.ReduceOp.AVG)  # all_reduce (mean)
     if master_process:
         print(f'validation loss: {val_loss_accum.item():.4f}')
         with open(log_file, 'a') as f:

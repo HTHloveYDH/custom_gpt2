@@ -2,6 +2,7 @@
     "model_type": "gpt2", 
     "vocab_size": 50257, 
     "block_size": 1024, 
+    "pos_encode": "abs_pos",
 
     "use_compile": false,
     "load_official_weights": true

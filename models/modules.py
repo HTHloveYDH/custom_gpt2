@@ -65,19 +65,19 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             torch.zeros(
                 config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
             )
-        )
+        )  # 12M
         self.register_buffer(
             'v_cache', 
             torch.zeros(
                 config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
             )
-        )
+        )  # 12M
         self.register_buffer(
             'att_cache', 
             torch.zeros(
                 config.num_return_sequences, config.n_head, config.block_size, config.block_size
             )
-        )
+        )  # 192M
         self.next_gen_token_idx = 0  # start from 0
 
     def forward(self, x):

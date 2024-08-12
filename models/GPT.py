@@ -14,7 +14,6 @@ class GPT(nn.Module):
         # super(GPT, self).__init__()
         super().__init__()
         self.config = config
-
         self.transformer = nn.ModuleDict(dict(
             wte = nn.Embedding(config.vocab_size, config.n_embd),  # token embedding
             wpe = nn.Embedding(config.block_size, config.n_embd),  # ?
@@ -48,7 +47,7 @@ class GPT(nn.Module):
         return logits, loss
 
     @classmethod
-    def from_pretrained(cls, model_type):
+    def from_official_pretrained(cls, model_type):
         """Loads pretrained GPT-2 model weights from huggingface"""
         assert model_type in {'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl'}
         from transformers import GPT2LMHeadModel
@@ -63,9 +62,10 @@ class GPT(nn.Module):
         }[model_type]
         config_args['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
         config_args['block_size'] = 1024 # always 1024 for GPT model checkpoints
+        config_args['num_return_sequences'] = 4
+        config_args['kv_cache'] = False
         # create a from-scratch initialized minGPT model
-        config = GPTConfig(**config_args)
-        model = GPT(config)
+        model = GPT(GPTConfig(**config_args))
         sd = model.state_dict()
         sd_keys = sd.keys()
         sd_keys = [k for k in sd_keys if not k.endswith('.attn.bias')] # discard this mask / buffer, not a param
@@ -95,6 +95,25 @@ class GPT(nn.Module):
                     sd[k].copy_(sd_hf[k])
         return model
 
+    @classmethod
+    def from_local_pretrained(cls, gpt_config:dict):
+        # n_layer, n_head and n_embd are determined from model_type
+        config_args = {
+            'gpt2': dict(n_layer=12, n_head=12, n_embd=768),  # 124M params
+            'gpt2-medium': dict(n_layer=24, n_head=16, n_embd=1024), # 350M params
+            'gpt2-large': dict(n_layer=36, n_head=20, n_embd=1280), # 774M params
+            'gpt2-xl': dict(n_layer=48, n_head=25, n_embd=1600), # 1558M params
+        }[gpt_config['model_type']]
+        config_args['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
+        config_args['block_size'] = 1024 # always 1024 for GPT model checkpoints
+        config_args['num_return_sequences'] = 4
+        config_args['kv_cache'] = False
+        # create a from-scratch initialized minGPT model
+        model = GPT(GPTConfig(**config_args))
+        ckpt = torch.load(gpt_config['ckpt_path'])
+        model.load_state_dict(ckpt)
+        return model
+
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             std = 0.02
@@ -105,10 +124,6 @@ class GPT(nn.Module):
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-
-    def enable_kv_cache(self, module):
-        if isinstance(module, CausalSelfAttention):
-            module.set_forward_once_to_kv_cache()
 
     def configure_optimizers(self, weight_decay, learning_rate, device_type, master_process):
         # start with all of the candidate parameters (that require grad)

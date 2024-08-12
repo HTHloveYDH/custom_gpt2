@@ -5,5 +5,10 @@
     "pos_encode": "abs_pos",
 
     "use_compile": false,
-    "load_official_weights": true
+    "kv_cache": false, 
+
+    "load_weights": "official",
+    "ckpt_path": "", 
+
+    "num_return_sequences": 4
 }

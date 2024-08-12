@@ -20,6 +20,9 @@ def main():
     seed = test_config['seed']  # defaults to 1337
     max_length = test_config['max_length']
     num_return_sequences = test_config['num_return_sequences']
+    # gpt configs
+    use_compile = gpt_config['use_compile']
+    assert num_return_sequences == gpt_config['num_return_sequences']
     # set up DP (distributed data parallel or fully sharded data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
     dp = dist_strategy in ['ddp', 'fsdp']

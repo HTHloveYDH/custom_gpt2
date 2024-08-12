@@ -93,14 +93,14 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
-        # input x is prompts
+        # input x is prompts of shape (B, T, C)
         if self.next_gen_token_idx == 0:
             self.k_cache[:, :, :T, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T, hs)
             self.v_cache[:, :, :T, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T, hs)
             y, att = self._normal_scaled_dot_product_attention(
                 q, self.k_cache[:, :, :T, :], self.v_cache[:, :, :T, :], is_causal=True
             )  # (B, nh, T, hs), (B, nh, T, T)
-        # input x is newly generated token in last inference
+        # input x is newly generated token of shape (B, T = 1, C) in last inference
         else:
             self.k_cache[:, :, self.next_gen_token_idx, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
             self.v_cache[:, :, self.next_gen_token_idx, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)

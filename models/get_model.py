@@ -20,7 +20,7 @@ from config.GPTConfig import GPTConfig
 
 
 def get_model(gpt_config:dict, device, dist_strategy:str, device_ids:list):
-    assert gpt_config['load_weights'] in ['official', 'local', None], f'load weights: {gpt_config['load_weights']}  is not supported'
+    assert gpt_config['load_weights'] in ['official', 'local', None], f"load weights: {gpt_config['load_weights']}  is not supported"
     # create model
     if gpt_config['load_weights'] == 'official':
         model = GPT.from_official_pretrained("gpt2")  # or init from OpenAI GPT-2

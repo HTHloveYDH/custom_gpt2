@@ -15,7 +15,7 @@ def main():
     gpt_config, gen_config, cloud_config, dist_config = load_configs('gen')
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
-    assert dist_strategy == 'default'
+    assert dist_strategy in ['ddp', 'fssdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
     # train configs
     seed = gen_config['seed']  # defaults to 1337
     max_length = gen_config['max_length']

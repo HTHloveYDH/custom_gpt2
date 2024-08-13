@@ -6,6 +6,7 @@
 
     "use_compile": false,
     "kv_cache": false, 
+    "infinite": false, 
 
     "load_weights": "official",
     "ckpt_path": "", 

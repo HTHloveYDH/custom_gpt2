@@ -51,9 +51,9 @@ class CausalSelfAttention(nn.Module):
         T = q.size(-2)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T, T)
         if is_causal:
-            att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))
-        att = F.softmax(att, dim=-1)
-        y = att @ v
+            att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))  # (B, nh, T, T)
+        att = F.softmax(att, dim=-1)  # (B, nh, T, T)
+        y = att @ v  # (B, nh, T, hs), nh * hs = C = n_embd
         return y, att
 
 class KVCacheCausalSelfAttention(CausalSelfAttention):

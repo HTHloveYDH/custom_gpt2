@@ -3,11 +3,12 @@ import os
 import torch
 from torch.distributed import init_process_group, destroy_process_group
 
-from dist.device import get_visible_devices
+from dist.device import get_devices
 
 
 def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
-    visible_devices = get_visible_devices(train_config['visible_device_indices'], 'cuda')
+    visible_devices = get_devices('cuda')
+    print(f'{len(visible_devices)} visible devices: ', visible_devices, ' detected.')
     if dist_strategy in ['ddp', 'fsdp']:
         # use of FSDP or DDP demands CUDA, we set the device appropriately according to rank
         assert torch.cuda.is_available(), 'for now i think we need CUDA for DDP or FSDP'

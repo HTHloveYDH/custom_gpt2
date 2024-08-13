@@ -41,7 +41,7 @@ def main():
     model, raw_model, enc = get_model(gpt_config, device, dist_strategy, device_ids)
 
     ''' ____________________________________________ test ___________________________________________ '''
-    tokens = enc.encode(test_config['prompt'])
+    tokens = enc.encode(gen_config['prompt'])
     tokens = torch.tensor(tokens, dtype=torch.long)
     tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
     x = tokens.to(device)

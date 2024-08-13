@@ -1,5 +1,7 @@
 {
     "seed": 1337, 
     "max_length": 32,
-    "num_return_sequences": 4
+    "num_return_sequences": 4, 
+
+    "prompt": "hello, I am a student and I come from the Earth"
 }

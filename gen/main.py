@@ -6,7 +6,7 @@ import torch
 sys.path.append(os.getcwd())
 from dist.distribute import init_dist, ternimate_dist
 from models.get_model import get_model
-from gen.gen_funcs import gen_sentences
+from gen.gen_funcs import gen_sentences_v2 as gen_sentences
 from utils.load_config import load_config_from_json as load_configs
 
 

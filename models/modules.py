@@ -109,7 +109,8 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
                 q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)
             ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
             self.att_cache[:, :, self.next_token_idx, :T_gen] = curr_token_att  # (B, nh, block_size, block_size)
-            att = F.softmax(self.att_cache[:, :, :T_gen, :T_gen], dim=-1)  # (B, nh, T_gen, T_gen)
+            att = self.att_cache[:, :, :T_gen, :T_gen]  # (B, nh, T_gen, T_gen)
+            att = F.softmax(att, dim=-1)  # (B, nh, T_gen, T_gen)
             y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T_gen, hs)
         # re-assemble all head outputs side by side
         y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T, nh * hs)

@@ -120,6 +120,31 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         self.next_token_idx += T  # (mostly, + 1)
         return y
 
+
+class InfiniteKVCacheCausalSelfAttention(CausalSelfAttention):
+    def __init__(self, config):
+        # super(InfiniteKVCacheCausalSelfAttention, self).__init__(config)
+        super().__init__(config)
+        self.register_buffer(
+            'k_cache', 
+            torch.zeros(
+                config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
+            )
+        )  # 12M
+        self.register_buffer(
+            'v_cache', 
+            torch.zeros(
+                config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
+            )
+        )  # 12M
+        self.register_buffer(
+            'att_cache', 
+            torch.zeros(
+                config.num_return_sequences, config.n_head, config.block_size, config.block_size
+            ).masked_fill(self.bias == 0, float('-inf'))  # (B, nh, block_size, block_size)
+        )  # 192M
+        self.next_token_idx = 0  # start from 0
+
 class TanhGELU(nn.Module):
     def forward(self, x):
         return 0.5 * x * (1.0 + torch.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * torch.pow(x, 3.0))))
@@ -145,7 +170,9 @@ class Block(nn.Module):
         # super(Block, self).__init__()
         super().__init__()
         self.ln_1 = nn.LayerNorm(config.n_embd)
-        if config.kv_cache:
+        if config.infinite:
+            self.attn = InfiniteKVCacheCausalSelfAttention(config)
+        elif config.kv_cache:
             self.attn = KVCacheCausalSelfAttention(config)
         else:
             self.attn = CausalSelfAttention(config)

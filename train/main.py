@@ -132,12 +132,12 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='simple distributed training job')
-    parser.add_argument('--ddp_world_size', type=int, help='Total processes to train the model')
+    parser.add_argument('--dp_world_size', type=int, help='Total processes to train the model')
     parser.add_argument('--torch_mp_launch', action='store_true')
     args = parser.parse_args()
     # launch by torch.multiprocessing
     if args.torch_mp_launch:
-        mp.spawn(main, args=(args.ddp_world_size, args.torch_mp_launch), nprocs=args.ddp_world_size)
+        mp.spawn(main, args=(args.dp_world_size, args.torch_mp_launch), nprocs=args.dp_world_size)
     # launch by torchrun or python
     else:
         main()

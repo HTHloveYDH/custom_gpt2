@@ -16,7 +16,7 @@ def load_config_from_json(mode:str):
         data_config = load_json(os.path.join('.', 'config', 'data_config.json'))
         return gpt_config, train_config, data_config, cloud_config, dist_config
     elif mode == 'gen':
-        test_config = load_json(os.path.join('.', 'config', 'test_config.json'))
-        return gpt_config, test_config, cloud_config, dist_config
+        gen_config = load_json(os.path.join('.', 'config', 'gen_config.json'))
+        return gpt_config, gen_config, cloud_config, dist_config
     else:
         raise ValueError(f'configuration mode: {mode} is not supported!')

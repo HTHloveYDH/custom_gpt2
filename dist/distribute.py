@@ -28,7 +28,7 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
         # added after video, pytorch can be serious about it's device vs. device_type distinction
         device = f'cuda:{dp_local_rank}'
         torch.cuda.set_device(device)
-        device_type = 'cuda' if device.startswith('cuda') else 'cpu'
+        print(f"using device: {device}")
     elif dist_strategy in ['default']:
         # vanilla, non-DDP run
         dp_global_rank = 0
@@ -36,12 +36,13 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
         dp_world_size = 1
         master_process = True
         # attempt to autodetect device
-        device = "cpu"
+        device = "cpu"  # defaults to 'cuda:0'
         if torch.cuda.is_available():
             device = "cuda"
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             device = "mps"
         print(f"using device: {device}")
+    device_type = 'cuda' if device.startswith('cuda') else 'cpu'
     return dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type
 
 def ternimate_dist(dist_strategy:str):

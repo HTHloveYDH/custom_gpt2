@@ -60,7 +60,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
     def __init__(self, config):
         # super(KVCacheCausalSelfAttention, self).__init__(config)
         super().__init__(config)
-        
+        self.block_size = config.block_size
         self.register_buffer(
             'k_cache', 
             torch.zeros(

@@ -12,16 +12,17 @@ from utils.load_config import load_config_from_json as load_configs
 
 def main():
     ''' __________________________________________ setup _____________________________________________ '''
-    gpt_config, test_config, cloud_config, dist_config = load_configs('gen')
+    gpt_config, gen_config, cloud_config, dist_config = load_configs('gen')
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
     assert dist_strategy == 'default'
     # train configs
-    seed = test_config['seed']  # defaults to 1337
-    max_length = test_config['max_length']
-    num_return_sequences = test_config['num_return_sequences']
+    seed = gen_config['seed']  # defaults to 1337
+    max_length = gen_config['max_length']
+    num_return_sequences = gen_config['num_return_sequences']
     # gpt configs
     use_compile = gpt_config['use_compile']
+    num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
     # set up DP (distributed data parallel or fully sharded data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE

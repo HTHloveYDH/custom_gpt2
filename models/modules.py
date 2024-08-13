@@ -76,9 +76,9 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             'att_cache', 
             torch.zeros(
                 config.num_return_sequences, config.n_head, config.block_size, config.block_size
-            )
+            ).masked_fill(self.bias == 0, float('-inf'))  # (B, nh, block_size, block_size)
         )  # 192M
-        self.next_gen_token_idx = 0  # start from 0
+        self.next_token_idx = 0  # start from 0
 
     def forward(self, x):
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
@@ -102,21 +102,21 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             )  # (B, nh, T, hs), (B, nh, T, T)
         # input x is newly generated token of shape (B, T = 1, C) in last inference
         else:
-            self.k_cache[:, :, self.next_gen_token_idx, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
-            self.v_cache[:, :, self.next_gen_token_idx, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
+            T_gen = self.next_token_idx + 1
+            self.k_cache[:, :, self.next_token_idx, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
+            self.v_cache[:, :, self.next_token_idx, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
             curr_token_att = (
-                q @ self.k_cache[:, :, :self.next_gen_token_idx + 1, :].transpose(-2, -1)
-            ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T)
-            self.att_cache[:, :, self.next_gen_token_idx, :T] = curr_token_att  # (B, nh, block_size, block_size)
-            self.att_cache = self.att_cache.masked_fill(self.bias == 0, float('-inf'))
-            att = F.softmax(self.att_cache[:, :, :T, :T], dim=-1)  # (B, nh, T, T)
-            y = att @ self.v_cache[:, :, :self.next_gen_token_idx + 1, :]  # (B, nh, T, hs)
+                q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)
+            ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
+            self.att_cache[:, :, self.next_token_idx, :T_gen] = curr_token_att  # (B, nh, block_size, block_size)
+            att = F.softmax(self.att_cache[:, :, :T_gen, :T_gen], dim=-1)  # (B, nh, T_gen, T_gen)
+            y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T_gen, hs)
         # re-assemble all head outputs side by side
-        y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T, hs) -> (B, T, nh, hs) -> (B, T, nh * hs)
+        y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T, nh * hs)
         # output projection
         y = self.c_proj(y)  # (B, T, nh * hs)
         # the next token idx
-        self.next_gen_token_idx += T  # (+ 1)
+        self.next_token_idx += T  # (mostly, + 1)
         return y
 
 class TanhGELU(nn.Module):

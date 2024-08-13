@@ -106,8 +106,8 @@ class GPT(nn.Module):
         }[gpt_config['model_type']]
         config_args['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
         config_args['block_size'] = 1024 # always 1024 for GPT model checkpoints
-        config_args['num_return_sequences'] = 4
-        config_args['kv_cache'] = False
+        config_args['num_return_sequences'] = gpt_config['num_return_sequences']
+        config_args['kv_cache'] = gpt_config['kv_cache']
         # create a from-scratch initialized minGPT model
         model = GPT(GPTConfig(**config_args))
         ckpt = torch.load(gpt_config['ckpt_path'])

@@ -164,7 +164,7 @@ class Block(nn.Module):
         self.ln_2 = nn.LayerNorm(config.n_embd)
         self.mlp = MLP(config)
 
-    def foward(self, x):
+    def forward(self, x):
         # [note]: pre-normalization version (layer normalization first)
         # [note]: clean residual pathway is desirable that gradient from top can flow straight to the x
         x = x + self.attn(self.ln_1(x))

@@ -60,6 +60,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
     def __init__(self, config):
         # super(KVCacheCausalSelfAttention, self).__init__(config)
         super().__init__(config)
+        
         self.register_buffer(
             'k_cache', 
             torch.zeros(
@@ -100,8 +101,13 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             y, att = self._normal_scaled_dot_product_attention(
                 q, self.k_cache[:, :, :T, :], self.v_cache[:, :, :T, :], is_causal=True
             )  # (B, nh, T, hs), (B, nh, T, T)
+            self.att_cache[:, :, :T, :T] = att  # (B, nh, block_size, block_size)
+            # re-assemble all head outputs side by side
+            y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T_gen, nh * hs)
         # input x is newly generated token of shape (B, T = 1, C) in last inference
         else:
+            if self.next_token_idx == self.block_size:   
+                self.shift_cache()  # shift k_cache, v_cache, att_cache
             T_gen = self.next_token_idx + 1
             self.k_cache[:, :, self.next_token_idx, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
             self.v_cache[:, :, self.next_token_idx, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
@@ -112,38 +118,19 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             att = self.att_cache[:, :, :T_gen, :T_gen]  # (B, nh, T_gen, T_gen)
             att = F.softmax(att, dim=-1)  # (B, nh, T_gen, T_gen)
             y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T_gen, hs)
-        # re-assemble all head outputs side by side
-        y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T, nh * hs)
+            # re-assemble all head outputs side by side
+            y = y.transpose(1, 2).contiguous().view(B, T_gen, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T_gen, nh * hs)
         # output projection
-        y = self.c_proj(y)  # (B, T, nh * hs)
+        y = self.c_proj(y)  # (B, T_gen, nh * hs)
         # the next token idx
         self.next_token_idx += T  # (mostly, + 1)
         return y
 
-
-class InfiniteKVCacheCausalSelfAttention(CausalSelfAttention):
-    def __init__(self, config):
-        # super(InfiniteKVCacheCausalSelfAttention, self).__init__(config)
-        super().__init__(config)
-        self.register_buffer(
-            'k_cache', 
-            torch.zeros(
-                config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
-            )
-        )  # 12M
-        self.register_buffer(
-            'v_cache', 
-            torch.zeros(
-                config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
-            )
-        )  # 12M
-        self.register_buffer(
-            'att_cache', 
-            torch.zeros(
-                config.num_return_sequences, config.n_head, config.block_size, config.block_size
-            ).masked_fill(self.bias == 0, float('-inf'))  # (B, nh, block_size, block_size)
-        )  # 192M
-        self.next_token_idx = 0  # start from 0
+    def shift_cache(self):
+        self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
+        self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
+        self.att_cache[:, :, :-1, :-1] = self.att_cache[:, :, 1:, 1:]  # (B, nh, self.block_size, self.block_size)
+        self.next_token_idx = self.block_size - 1
 
 class TanhGELU(nn.Module):
     def forward(self, x):
@@ -170,9 +157,7 @@ class Block(nn.Module):
         # super(Block, self).__init__()
         super().__init__()
         self.ln_1 = nn.LayerNorm(config.n_embd)
-        if config.infinite:
-            self.attn = InfiniteKVCacheCausalSelfAttention(config)
-        elif config.kv_cache:
+        if config.kv_cache:
             self.attn = KVCacheCausalSelfAttention(config)
         else:
             self.attn = CausalSelfAttention(config)

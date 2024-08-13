@@ -95,7 +95,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         # input x is prompts of shape (B, T, C)
-        if self.next_gen_token_idx == 0:
+        if self.next_token_idx == 0:
             self.k_cache[:, :, :T, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T, hs)
             self.v_cache[:, :, :T, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T, hs)
             y, att = self._normal_scaled_dot_product_attention(
@@ -109,12 +109,12 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             if self.next_token_idx == self.block_size:   
                 self.shift_cache()  # shift k_cache, v_cache, att_cache
             T_gen = self.next_token_idx + 1
-            self.k_cache[:, :, self.next_token_idx, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
-            self.v_cache[:, :, self.next_token_idx, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
+            self.k_cache[:, :, self.next_token_idx, :] = k.squeeze(dim=2)  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
+            self.v_cache[:, :, self.next_token_idx, :] = v.squeeze(dim=2)  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
             curr_token_att = (
                 q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)
             ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
-            self.att_cache[:, :, self.next_token_idx, :T_gen] = curr_token_att  # (B, nh, block_size, block_size)
+            self.att_cache[:, :, self.next_token_idx, :T_gen] = curr_token_att.squeeze(dim=2)  # (B, nh, block_size, block_size)
             att = self.att_cache[:, :, :T_gen, :T_gen]  # (B, nh, T_gen, T_gen)
             att = F.softmax(att, dim=-1)  # (B, nh, T_gen, T_gen)
             y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T_gen, hs)

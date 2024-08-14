@@ -4,7 +4,6 @@
     "micro_batch_size": 64, 
     "total_token_size": null, 
     "sequence_length": 1024, 
-    "steps_per_epoch": null, 
     "grad_accum_steps": null,
     "val_steps": null, 
     "epochs": 50, 

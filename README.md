@@ -45,3 +45,7 @@ gpt2-largen_layer=36, n_head=20, n_embd=1280  # 774M params
 
 ### gpt2-xl
 n_layer=48, n_head=25, n_embd=1600  # 1558M params
+
+## some useful links
+### quant
+https://chatgpt.com/share/31aa8af3-dce2-457f-85db-2b18b3c242ce

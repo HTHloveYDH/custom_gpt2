@@ -9,7 +9,7 @@ python train/main.py --dp_world_size 1
 
 ### DDP (FSDP) launch on one node by torch.multiprocessing (e.g. 8 GPUs):
 ```bash
-python train/main.py --dp_world_size 8
+python train/main.py --dp_world_size 8 --torch_mp_launch
 ```
 
 ### DDP (FSDP) launch on one node by torchrun (e.g. 8 GPUs):

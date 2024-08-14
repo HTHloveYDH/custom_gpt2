@@ -1,4 +1,4 @@
 {
-    "data_root": "./data/txt/debug_input.txt", 
-    "data_format": "text"
+    "data_root": "./data/txt", 
+    "data_format": "txt"
 }

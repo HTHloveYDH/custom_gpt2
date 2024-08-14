@@ -54,7 +54,7 @@ class CausalSelfAttention(nn.Module):
             att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))  # (B, nh, T, T)
         att = F.softmax(att, dim=-1)  # (B, nh, T, T)
         y = att @ v  # (B, nh, T, hs), nh * hs = C = n_embd
-        return y, att
+        return y
 
 class KVCacheCausalSelfAttention(CausalSelfAttention):
     def __init__(self, config):
@@ -73,12 +73,6 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
                 config.num_return_sequences, config.n_head, config.block_size, config.n_embd // config.n_head
             )
         )  # 12M
-        self.register_buffer(
-            'att_cache', 
-            torch.zeros(
-                config.num_return_sequences, config.n_head, config.block_size, config.block_size
-            ).masked_fill(self.bias == 0, float('-inf'))  # (B, nh, block_size, block_size)
-        )  # 192M
         self.next_token_idx = 0  # start from 0
 
     def forward(self, x):
@@ -98,24 +92,19 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         if self.next_token_idx == 0:
             self.k_cache[:, :, :T, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T, hs)
             self.v_cache[:, :, :T, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T, hs)
-            y, att = self._normal_scaled_dot_product_attention(
+            y = self._normal_scaled_dot_product_attention(
                 q, self.k_cache[:, :, :T, :], self.v_cache[:, :, :T, :], is_causal=True
             )  # (B, nh, T, hs), (B, nh, T, T)
-            self.att_cache[:, :, :T, :T] = att  # (B, nh, block_size, block_size)
             # re-assemble all head outputs side by side
             y = y.transpose(1, 2).contiguous().view(B, T, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T_gen, nh * hs)
         # input x is newly generated token of shape (B, T = 1, C) in last inference
         else:
             if self.next_token_idx == self.block_size:   
-                self.shift_cache()  # shift k_cache, v_cache, att_cache
+                self.shift_cache()  # shift k_cache, v_cache
             T_gen = self.next_token_idx + 1
             self.k_cache[:, :, self.next_token_idx:T_gen, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
             self.v_cache[:, :, self.next_token_idx:T_gen, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
-            curr_token_att = (
-                q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)
-            ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
-            self.att_cache[:, :, self.next_token_idx:T_gen, :T_gen] = curr_token_att  # (B, nh, block_size, block_size)
-            att = self.att_cache[:, :, self.next_token_idx:T_gen, :T_gen]  # (B, nh, T = 1, T_gen)
+            att = (q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
             att = F.softmax(att, dim=-1)  # (B, nh, T = 1, T_gen)
             y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T = 1, hs)
             # re-assemble all head outputs side by side
@@ -129,7 +118,6 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
     def shift_cache(self):
         self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
         self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
-        self.att_cache[:, :, :-1, :-1] = self.att_cache[:, :, 1:, 1:]  # (B, nh, self.block_size, self.block_size)
         self.next_token_idx = self.block_size - 1
 
 class TanhGELU(nn.Module):

@@ -19,8 +19,8 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     # create the log directory we will write checkpoints to and log to
     log_dir = "log"
     os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join('.', log_dir, f"log.txt")
-    with open(log_file, "w") as f: # open for writing to clear the file
+    log_file_path = os.path.join('.', log_dir, f"log.txt")
+    with open(log_file_path, "w") as f: # open for writing to clear the file
         pass
     # load configs
     gpt_config, train_config, data_config, cloud_config, dist_config = load_configs('train')
@@ -50,7 +50,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     use_compile = gpt_config['use_compile']
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
-    # set up DP (distributed data parallel or fully sharded data parallel).
+    # set up DP (distributed data parallel or fully sharded data parallel) process group.
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
     dp = dist_strategy in ['ddp', 'fsdp']
     dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_dist(
@@ -107,13 +107,13 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
             # train model on several batches
             train_grad_accum_steps(
                 model, train_loader, optimizer, grad_accum_steps, max_lr, warmup_steps, max_steps, device, 
-                device_type, master_process, dp, dp_world_size, global_grad_accum_stage, log_file
+                device_type, master_process, dp, dp_world_size, global_grad_accum_stage, log_file_path
             )
             # once in a while evaluate our validation loss
             if global_grad_accum_stage % save_interval == 0 or last_grad_accum_stage:
                 valid_epoch_wise(
                     model, raw_model, val_loader, device, device_type, master_process, dp, val_steps, 
-                    global_grad_accum_stage, last_grad_accum_stage, ckpt_dir, log_file, log_dir
+                    global_grad_accum_stage, last_grad_accum_stage, log_file_path, ckpt_dir
                 )
             # once in a while generate from the model (except step 0, which is noise)
             if (global_grad_accum_stage % save_interval == 0 or last_grad_accum_stage) and (not use_compile):
@@ -124,6 +124,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
                 gen_sentences(
                     model, enc, x, device, device_type, num_return_sequences, max_length, dp_global_rank
                 )
+    # terminate process group
     ternimate_dist(dist_strategy)
 
 

@@ -33,7 +33,6 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     micro_batch_size = train_config['micro_batch_size']  # defaults to 64
     total_token_size = train_config['total_token_size']  # 2**19, ~0.5M, in number of tokens
     sequence_length = train_config['sequence_length']  # defaults to 1024
-    steps_per_epoch = train_config['steps_per_epoch']
     grad_accum_steps = train_config['grad_accum_steps']
     val_steps = train_config['val_steps']
     epochs = train_config['epochs']

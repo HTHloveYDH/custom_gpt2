@@ -30,6 +30,7 @@ def gen_sentences_v1(model, enc, xgen, device, device_type, num_return_sequences
     for i in range(num_return_sequences):
         tokens = xgen[i, :max_length].tolist()
         decoded = enc.decode(tokens)
+        print('generated sentences: ')
         print(f"rank {dp_rank} sample {i}: {decoded}")
 
 def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences:int, \
@@ -61,4 +62,5 @@ def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences
     for i in range(num_return_sequences):
         tokens = xgen[i, :max_length].tolist()
         decoded = enc.decode(tokens)
+        print('generated sentences: ')
         print(f"rank {dp_rank} sample {i}: {decoded}")

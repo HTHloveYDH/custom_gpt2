@@ -20,12 +20,12 @@ torchrun --standalone --nproc_per_node=8 train/main.py --dp_world_size 8
 ### DDP (FSDP) launch on multi node by torchrun (e.g. 2 * 8 GPUs, two nodes):
 ```bash
 # on node 0#
-torchrun --nproc_per_node=8 --nnodes=2 -node_rank=0 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --dp_world_size 8
+torchrun --nproc_per_node=8 --nnodes=2 -node_rank=0 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --dp_world_size 16
 ```
 
 ```bash
 # on node 1#
-torchrun --nproc_per_node=8 --nnodes=2 -node_rank=1 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --dp_world_size 8
+torchrun --nproc_per_node=8 --nnodes=2 -node_rank=1 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --dp_world_size 16
 ```
 
 ## lanuch generation task

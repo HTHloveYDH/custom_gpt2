@@ -26,7 +26,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     gpt_config, train_config, data_config, cloud_config, dist_config = load_configs('train')
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
-    assert dist_strategy in ['ddp', 'fssdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
+    assert dist_strategy in ['ddp', 'fsdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
     # train configs
     learning_rate = train_config['learning_rate']  # defaults to 6e-4
     weight_decay = train_config['weight_decay']  # defaults to 0.1

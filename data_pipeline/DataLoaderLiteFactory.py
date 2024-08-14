@@ -1,9 +1,9 @@
-from data_pipeline.DataLoaderLite import NpyDataLoaderLite, TextDataLoaderLite, JsonDataLoaderLite
+from data_pipeline.DataLoaderLite import NpyDataLoaderLite, TxtDataLoaderLite, JsonDataLoaderLite
 
 
 classname_map = {
     'npy': NpyDataLoaderLite, 
-    'text': TextDataLoaderLite, 
+    'txt': TxtDataLoaderLite, 
     'json': JsonDataLoaderLite
 }
 

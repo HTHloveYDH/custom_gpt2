@@ -95,7 +95,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
 
     ''' ____________________________________________ train ___________________________________________ '''
     # get optimizer
-    optimizer = get_optimizer(raw_model, weight_decay, learning_rate, device_type)
+    optimizer = get_optimizer(raw_model, weight_decay, learning_rate, device_type, master_process)
     # start train loop
     max_grad_accum_stages = epochs * grad_accum_stages_per_epoch
     max_steps = max_grad_accum_stages * grad_accum_steps

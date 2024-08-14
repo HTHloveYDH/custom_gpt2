@@ -109,19 +109,19 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             if self.next_token_idx == self.block_size:   
                 self.shift_cache()  # shift k_cache, v_cache, att_cache
             T_gen = self.next_token_idx + 1
-            self.k_cache[:, :, self.next_token_idx, :] = k.squeeze(dim=2)  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
-            self.v_cache[:, :, self.next_token_idx, :] = v.squeeze(dim=2)  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
+            self.k_cache[:, :, self.next_token_idx:T_gen, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
+            self.v_cache[:, :, self.next_token_idx:T_gen, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
             curr_token_att = (
                 q @ self.k_cache[:, :, :T_gen, :].transpose(-2, -1)
             ) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
-            self.att_cache[:, :, self.next_token_idx, :T_gen] = curr_token_att.squeeze(dim=2)  # (B, nh, block_size, block_size)
-            att = self.att_cache[:, :, :T_gen, :T_gen]  # (B, nh, T_gen, T_gen)
-            att = F.softmax(att, dim=-1)  # (B, nh, T_gen, T_gen)
-            y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T_gen, hs)
+            self.att_cache[:, :, self.next_token_idx:T_gen, :T_gen] = curr_token_att  # (B, nh, block_size, block_size)
+            att = self.att_cache[:, :, self.next_token_idx:T_gen, :T_gen]  # (B, nh, T = 1, T_gen)
+            att = F.softmax(att, dim=-1)  # (B, nh, T = 1, T_gen)
+            y = att @ self.v_cache[:, :, :T_gen, :]  # (B, nh, T = 1, hs)
             # re-assemble all head outputs side by side
-            y = y.transpose(1, 2).contiguous().view(B, T_gen, C)  # (B, nh, T_gen, hs) -> (B, T_gen, nh, hs) -> (B, T_gen, nh * hs)
+            y = y.transpose(1, 2).contiguous().view(B, 1, C)  # (B, nh, T = 1, hs) -> (B, T = 1, nh, hs) -> (B, T = 1, nh * hs)
         # output projection
-        y = self.c_proj(y)  # (B, T_gen, nh * hs)
+        y = self.c_proj(y)  # (B, T = 1, nh * hs)
         # the next token idx
         self.next_token_idx += T  # (mostly, + 1)
         return y

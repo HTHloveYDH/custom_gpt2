@@ -23,7 +23,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     with open(log_file, "w") as f: # open for writing to clear the file
         pass
     # load configs
-    gpt_config, train_config, gen_config, data_config, cloud_config, dist_config = load_configs('train')
+    gpt_config, train_config, data_config, cloud_config, dist_config = load_configs('train')
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
     assert dist_strategy in ['ddp', 'fssdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
@@ -51,8 +51,6 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     use_compile = gpt_config['use_compile']
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
-    # generation configs
-    assert num_return_sequences == gen_config['num_return_sequences']
     # set up DP (distributed data parallel or fully sharded data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
     dp = dist_strategy in ['ddp', 'fsdp']

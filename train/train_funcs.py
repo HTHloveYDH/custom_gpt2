@@ -30,7 +30,7 @@ def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_typ
 
 def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int, max_lr:int, \
                            warmup_steps:int, max_steps:int, device, device_type:str, master_process:bool, \
-                           dp:bool, dp_world_size:int, global_grad_accum_stage:int, log_file:str):
+                           dp:bool, dp_world_size:int, global_grad_accum_stage:int, log_file_path:str):
     t0 = time.time()
     # do grad_accum_steps steps of the optimization
     model.train()
@@ -69,13 +69,13 @@ def train_grad_accum_steps(model, train_loader, optimizer, grad_accum_steps:int,
     tokens_per_sec = tokens_processed / dt
     if master_process:
         print(f'global_step {global_step:5d} | loss: {loss_accum.item():.6f} | lr {lr:.4e} | norm: {norm:.4f} | dt: {dt*1000:.2f}ms | tok/sec: {tokens_per_sec:.2f}')
-        with open(log_file, 'a') as f:
+        with open(log_file_path, 'a') as f:
             f.write(f'{global_step} train {loss_accum.item():.6f}\n')
 
 
-def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, master_process:bool, dp:bool, \
-                     val_steps:int, global_grad_accum_stage:int, last_grad_accum_stage:int, log_file:str, \
-                     ckpt_dir:str, log_dir:str):
+def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, master_process:bool, \
+                     dp:bool, val_steps:int, global_grad_accum_stage:int, last_grad_accum_stage:int, \
+                     log_file_path:str, ckpt_dir:str):
     model.eval()
     val_loader.reset()
     with torch.no_grad():
@@ -92,10 +92,11 @@ def valid_epoch_wise(model, raw_model, val_loader, device, device_type:str, mast
         dist.all_reduce(val_loss_accum, op=dist.ReduceOp.AVG)  # all_reduce (mean)
     if master_process:
         print(f'validation loss: {val_loss_accum.item():.4f}')
-        with open(log_file, 'a') as f:
+        with open(log_file_path, 'a') as f:
             f.write(f'{global_grad_accum_stage} val {val_loss_accum.item():.4f}\n')
         if global_grad_accum_stage > 0 and (global_grad_accum_stage % 5000 == 0 or last_grad_accum_stage):
             # optionally write model checkpoints
+            log_dir = os.path.dirname(log_file_path)
             save_curr_model_path = os.path.join(log_dir, f'model_{global_grad_accum_stage:05d}.pt')
             _save_ckpt(raw_model, global_grad_accum_stage, val_loss_accum.item(), save_curr_model_path)
             checkpoint_path = os.path.join(ckpt_dir, f'model.pt')

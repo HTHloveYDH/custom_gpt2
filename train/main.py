@@ -52,7 +52,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
     # generation configs
-    
+    assert num_return_sequences == gen_config['num_return_sequences']
     # set up DP (distributed data parallel or fully sharded data parallel).
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
     dp = dist_strategy in ['ddp', 'fsdp']

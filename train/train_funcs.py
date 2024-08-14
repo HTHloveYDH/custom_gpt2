@@ -20,10 +20,11 @@ def _get_lr(it, max_lr = 6e-4, warmup_steps = 715, max_steps = 19073):
     coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
     return min_lr + coeff * (max_lr - min_lr)
 
-def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_type:str):
+def get_optimizer(raw_model, weight_decay:float, learning_rate:float, device_type:str, master_process:bool):
     # get optimizer!
     optimizer = raw_model.configure_optimizers(
-        weight_decay=weight_decay, learning_rate=learning_rate, device_type=device_type
+        weight_decay=weight_decay, learning_rate=learning_rate, device_type=device_type, 
+        master_process=master_process
     )
     return optimizer
 

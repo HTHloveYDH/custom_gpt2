@@ -114,7 +114,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
             #     q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :]
             # )  # (B, nh, T = 1, hs)
             y = F.scaled_dot_product_attention(
-                q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :], is_causal=True
+                q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :], is_causal=False
             )  # (B, nh, T = 1, hs)
             # re-assemble all head outputs side by side
             y = y.transpose(1, 2).contiguous().view(B, 1, C)  # (B, nh, T = 1, hs) -> (B, T = 1, nh, hs) -> (B, T = 1, nh * hs)

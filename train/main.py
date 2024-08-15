@@ -48,6 +48,8 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     data_format = data_config['data_format']
     # gpt configs
     use_compile = gpt_config['use_compile']
+    kv_cache = gpt_config['kv_cache']
+    assert kv_cache == False, f'kv_cache is {kv_cache} which is not valid in training'
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
     # set up DP (distributed data parallel or fully sharded data parallel) process group.

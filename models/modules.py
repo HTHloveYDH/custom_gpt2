@@ -49,7 +49,8 @@ class CausalSelfAttention(nn.Module):
 
     def _normal_scaled_dot_product_attention(self, q, k, v, is_causal=False):
         T = q.size(-2)  # T can be 1
-        # suppose T_gen = k.size(-2) = v.size(-2)
+        # suppose T_gen is length of generated sentence by far
+        # T_gen = k.size(-2) = v.size(-2)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T, T_gen)
         if is_causal:
             att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))  # (B, nh, T, T_gen)
@@ -105,11 +106,12 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         else:
             if self.next_token_idx == self.block_size:   
                 self.shift_cache()  # shift k_cache, v_cache
+            # suppose T_gen is length of generated sentence in current slide window (length = 1024) by far
             T_gen = self.next_token_idx + 1
             self.k_cache[:, :, self.next_token_idx:T_gen, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
             self.v_cache[:, :, self.next_token_idx:T_gen, :] = v  # (B, nh, block_size, hs), v is of shape (B, nh, T = 1, hs)
-            # y = self._normal_scaled_dot_product_attention(
-            #     q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :], is_causal=True
+            # y = self._kvcache_scaled_dot_product_attention(
+            #     q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :]
             # )  # (B, nh, T = 1, hs)
             y = F.scaled_dot_product_attention(
                 q, self.k_cache[:, :, :T_gen, :], self.v_cache[:, :, :T_gen, :], is_causal=True
@@ -120,6 +122,15 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         y = self.c_proj(y)  # (B, T = 1, nh * hs)
         # the next token idx
         self.next_token_idx += T  # (mostly, + 1)
+        return y
+    
+    def _kvcache_scaled_dot_product_attention(self, q, k, v):
+        # T = q.size(2) = 1
+        # suppose T_gen is length of generated sentence in current slide window (length = 1024) by far
+        # T_gen = k.size(-2) = v.size(-2)
+        att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T = 1, T_gen)
+        att = F.softmax(att, dim=-1)  # (B, nh, T = 1, T_gen)
+        y = att @ v  # (B, nh, T = 1, T_gen) @ (B, nh, T_gen, hs) -> (B, nh, T = 1, hs), nh * hs = C = n_embd
         return y
 
     def shift_cache(self):

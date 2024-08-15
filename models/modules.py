@@ -48,7 +48,8 @@ class CausalSelfAttention(nn.Module):
         return y
 
     def _normal_scaled_dot_product_attention(self, q, k, v, is_causal=False):
-        T = q.size(-2)  # and suppose T_gen = k.size(-2) 
+        T = q.size(-2)  # T can be 1
+        # suppose T_gen = k.size(-2) = v.size(-2)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))  # (B, nh, T, T_gen)
         if is_causal:
             att = att.masked_fill(self.bias[:, :, :T, :T] == 0, float('-inf'))  # (B, nh, T, T_gen)

@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import torch
 
@@ -48,9 +49,11 @@ def main():
     tokens = torch.tensor(tokens, dtype=torch.long)
     tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
     x = tokens.to(device)
+    t0 = time.time()
     gen_sentences(
         model, enc, x, device, device_type, num_return_sequences, max_length, dp_global_rank
     )
+    print('time cost for generating sentences: ', time.time() - t0, ' seconds')
     ternimate_dist(dist_strategy)
 
 if __name__ == '__main__':

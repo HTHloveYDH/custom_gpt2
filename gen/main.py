@@ -6,7 +6,7 @@ import torch
 sys.path.append(os.getcwd())
 from dist.distribute import init_dist, ternimate_dist
 from models.get_model import get_model
-from gen.gen_funcs import gen_sentences_v2 as gen_sentences
+from gen.gen_funcs import gen_sentences_v2, gen_sentences_v1
 from utils.load_config import load_config_from_json as load_configs
 
 
@@ -16,10 +16,12 @@ def main():
     # distribute configs
     dist_strategy = dist_config['dist_strategy']
     assert dist_strategy in ['ddp', 'fssdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
-    # train configs
+    # generation configs
     seed = gen_config['seed']  # defaults to 1337
     max_length = gen_config['max_length']
     num_return_sequences = gen_config['num_return_sequences']
+    gen_func = gen_config['gen_func']
+    assert gen_func in ['v1', 'v2'], f'generation function version: {gen_func} is not supported'
     # gpt configs
     use_compile = gpt_config['use_compile']
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
@@ -41,6 +43,7 @@ def main():
     model, raw_model, enc = get_model(gpt_config, device, dist_strategy, device_ids)
 
     ''' ____________________________________________ test ___________________________________________ '''
+    gen_sentences = {'v1': gen_sentences_v1, 'v2': gen_sentences_v2}[gen_func]
     tokens = enc.encode(gen_config['prompt'])
     tokens = torch.tensor(tokens, dtype=torch.long)
     tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)

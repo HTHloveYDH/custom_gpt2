@@ -104,7 +104,7 @@ class GPT(nn.Module):
             'gpt2-large': dict(n_layer=36, n_head=20, n_embd=1280), # 774M params
             'gpt2-xl': dict(n_layer=48, n_head=25, n_embd=1600), # 1558M params
         }[gpt_config['model_type']]
-        assert config_args['n_head'] % gpt_config['n_group_head'], f'make sure n_head is divisible by n_group_head'
+        assert config_args['n_head'] % gpt_config['n_group_head'] == 0, f'make sure n_head is divisible by n_group_head'
         config_args['n_group_head'] = gpt_config['n_group_head']
         config_args['vocab_size'] = 50257 # always 50257 for GPT model checkpoints
         config_args['block_size'] = 1024 # always 1024 for GPT model checkpoints

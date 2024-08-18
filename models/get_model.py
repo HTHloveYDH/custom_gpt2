@@ -34,6 +34,8 @@ def get_model(gpt_config:dict, device, dist_strategy:str, device_ids:list):
             'gpt2-large': dict(n_layer=36, n_head=20, n_embd=1280),  # 774M params
             'gpt2-xl': dict(n_layer=48, n_head=25, n_embd=1600),  # 1558M params
         }[gpt_config['model_type']]
+        assert config_args['n_head'] % gpt_config['n_group_head'], f'make sure n_head is divisible by n_group_head'
+        config_args['n_group_head'] = gpt_config['n_group_head']
         config_args['vocab_size'] = gpt_config['vocab_size']
         config_args['block_size'] = gpt_config['block_size']
         config_args['num_return_sequences'] = gpt_config['num_return_sequences']

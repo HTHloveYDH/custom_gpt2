@@ -126,18 +126,29 @@ class GPT(nn.Module):
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
-            
-    def init_lora_weights(self, rank=1, alpha=1):
+    
+    @staticmethod
+    def init_lora_weights(module, rank=1, alpha=1):
+        '''
+        usage: 
+            import functools
+            init_lora_weights = functools.partial(GPT.init_lora_weights, rank=rank, alpha=alpha)
+            gpt = GPT(GPTConfig(**config_args))
+            gpt.apply(init_lora_weights)
+        '''
+        if isinstance(module, nn.Linear):
+            LoRAParametrization.inject_lora_weights(module, rank=1, alpha=1)
+    
+    def init_lora(self, rank=1, alpha=1):
         '''
         usage: 
             gpt = GPT(GPTConfig(**config_args))
-            gpt.init_lora_weights(rank=rank, alpha=alpha)
+            gpt.init_lora(rank=rank, alpha=alpha)
         '''
         # original_weights = LoRAParametrization.get_original_weights(self)
         original_non_lora_weights = LoRAParametrization.count_original_non_lora_weights(self)
         for module in self.modules():
-            if isinstance(module, nn.Linear):
-                LoRAParametrization.inject_lora_weights(module, rank=1, alpha=1)
+            self.init_lora_weights(module, rank, alpha)
         _, _ = LoRAParametrization.count_lora_weights(self, original_non_lora_weights)
         # LoRAParametrization.confirm_original_weights(self, original_weights)
         # LoRAParametrization.enable_disable_lora(self, True)

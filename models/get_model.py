@@ -41,6 +41,8 @@ def get_model(gpt_config:dict, device, dist_strategy:str, device_ids:list):
         config_args['num_return_sequences'] = gpt_config['num_return_sequences']
         config_args['kv_cache'] = gpt_config['kv_cache']
         model = GPT(GPTConfig(**config_args))
+    if gpt_config['lora']:
+        model.init_lora(rank=gpt_config['lora_rank'], alpha=gpt_config['lora_alpha'])
     model.to(device)
     use_compile = False # torch.compile interferes with HellaSwag eval and Generation. TODO fix
     if use_compile:

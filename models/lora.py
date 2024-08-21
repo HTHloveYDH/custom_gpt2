@@ -34,41 +34,41 @@ class LoRAParametrization(nn.Module):
             original_weights[name] = param.clone().detach()  
         return original_weights 
     
+    @staticmethod
+    def count_original_non_lora_weights(net:nn.Module):
+        # Print the size of the weights matrices of the network
+        # Save the count of the total number of weights
+        non_lora_weights = 0
+        for index, module in enumerate(net.modules()):
+            if isinstance(module, nn.Linear):
+                non_lora_weights += module.weight.nelement() + module.bias.nelement()
+                print(f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape}')
+        print(f'Total number of weights: {non_lora_weights:,}')
+        return non_lora_weights
+    
     @classmethod
     def inject_lora_weights(cls, layer:nn.Module, rank=1, alpha=1):
         parametrize.register_parametrization(layer, "weight", cls(layer, rank, alpha))
-    
-    @staticmethod
-    def count_original_weights(net:nn.Module):
-        # Print the size of the weights matrices of the network
-        # Save the count of the total number of parameters
-        total_parameters_original = 0
-        for index, module in enumerate(net.modules()):
-            if isinstance(module, nn.Linear):
-                total_parameters_original += module.weight.nelement() + module.bias.nelement()
-                print(f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape}')
-        print(f'Total number of parameters: {total_parameters_original:,}')
-        return total_parameters_original
 
     @staticmethod
-    def count_lora_weights(net:nn.Module):
-        total_parameters_lora = 0
-        total_parameters_non_lora = 0
+    def count_lora_weights(net:nn.Module, original_non_lora_weights:int):
+        lora_weights = 0
+        non_lora_weights = 0
         for index, module in enumerate(net.modules()):
             if isinstance(module, nn.Linear):
-                total_parameters_lora += module.parametrizations["weight"][0].lora_A.nelement() + module.parametrizations["weight"][0].lora_B.nelement()
-                total_parameters_non_lora += module.weight.nelement() + module.bias.nelement()
+                non_lora_weights += module.weight.nelement() + module.bias.nelement()
+                lora_weights += module.parametrizations["weight"][0].lora_A.nelement() + module.parametrizations["weight"][0].lora_B.nelement()
                 print(
-                    f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape} + Lora_A: {module.parametrizations["weight"][0].lora_A.shape} + Lora_B: {layer.parametrizations["weight"][0].lora_B.shape}'
+                    f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape} + Lora_A: {module.parametrizations["weight"][0].lora_A.shape} + Lora_B: {module.parametrizations["weight"][0].lora_B.shape}'
                 )
-        # The non-LoRA parameters count must match the original network
-        assert total_parameters_non_lora == LoRAParametrization.count_original_weights(net)
-        print(f'Total number of parameters (original): {total_parameters_non_lora:,}')
-        print(f'Total number of parameters (original + LoRA): {total_parameters_lora + total_parameters_non_lora:,}')
-        print(f'Parameters introduced by LoRA: {total_parameters_lora:,}')
-        parameters_incremment = (total_parameters_lora / total_parameters_non_lora) * 100
-        print(f'Parameters incremment: {parameters_incremment:.3f}%')
-        return total_parameters_lora, total_parameters_non_lora
+        # The non-LoRA weights count must match the original network
+        assert non_lora_weights == original_non_lora_weights
+        print(f'Total number of weights (original): {non_lora_weights:,}')
+        print(f'Total number of weights (original + LoRA): {lora_weights + non_lora_weights:,}')
+        print(f'Weights introduced by LoRA: {lora_weights:,}')
+        weights_incremment = (lora_weights / non_lora_weights) * 100
+        print(f'Weights incremment: {weights_incremment:.3f}%')
+        return lora_weights, non_lora_weights
     
     @staticmethod        
     def enable_disable_lora(net:nn.Module, enabled=True):
@@ -78,7 +78,7 @@ class LoRAParametrization(nn.Module):
 
     @staticmethod
     def freeze_non_lora_weights(net:nn.Module):
-        # Freeze the non-Lora parameters
+        # Freeze the non-Lora weights
         for name, param in net.named_parameters():
             if 'lora' not in name:
                 print(f'Freezing non-LoRA parameter {name}')
@@ -88,7 +88,7 @@ class LoRAParametrization(nn.Module):
     def confirm_original_weights(net:nn.Module, original_weights:dict):
         for name, module in net.named_modules():
             if isinstance(module, nn.Linear):
-                # Check that the frozen parameters are still unchanged by the finetuning
+                # Check that the frozen weights are still unchanged by the finetuning
                 assert torch.all(module.parametrizations.weight.original == original_weights[f'{name}.weight'])
         LoRAParametrization.enable_disable_lora(enabled=True)
         # The new module is obtained by the "forward" function of our LoRA parametrization

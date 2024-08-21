@@ -41,8 +41,12 @@ class LoRAParametrization(nn.Module):
         non_lora_weights = 0
         for index, module in enumerate(net.modules()):
             if isinstance(module, nn.Linear):
-                non_lora_weights += module.weight.nelement() + module.bias.nelement()
-                print(f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape}')
+                if module.bias is not None:
+                    non_lora_weights += module.weight.nelement() + module.bias.nelement()
+                    print(f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape}')
+                else:
+                    non_lora_weights += module.weight.nelement()
+                    print(f'module {index+1}: W: {module.weight.shape} + B: None')
         print(f'Total number of weights: {non_lora_weights:,}')
         return non_lora_weights
     
@@ -56,11 +60,17 @@ class LoRAParametrization(nn.Module):
         non_lora_weights = 0
         for index, module in enumerate(net.modules()):
             if isinstance(module, nn.Linear):
-                non_lora_weights += module.weight.nelement() + module.bias.nelement()
                 lora_weights += module.parametrizations["weight"][0].lora_A.nelement() + module.parametrizations["weight"][0].lora_B.nelement()
-                print(
-                    f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape} + Lora_A: {module.parametrizations["weight"][0].lora_A.shape} + Lora_B: {module.parametrizations["weight"][0].lora_B.shape}'
-                )
+                if module.bias is not None:
+                    non_lora_weights += module.weight.nelement() + module.bias.nelement()
+                    print(
+                        f'module {index+1}: W: {module.weight.shape} + B: {module.bias.shape} + Lora_A: {module.parametrizations["weight"][0].lora_A.shape} + Lora_B: {module.parametrizations["weight"][0].lora_B.shape}'
+                    )
+                else:
+                    non_lora_weights += module.weight.nelement()
+                    print(
+                        f'module {index+1}: W: {module.weight.shape} + Lora_A: {module.parametrizations["weight"][0].lora_A.shape} + Lora_B: {module.parametrizations["weight"][0].lora_B.shape}'
+                    )
         # The non-LoRA weights count must match the original network
         assert non_lora_weights == original_non_lora_weights
         print(f'Total number of weights (original): {non_lora_weights:,}')

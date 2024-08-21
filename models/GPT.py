@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from models.modules import Block
-from models.modules import CausalSelfAttention
+from models.lora import LoRAParametrization
 from config.GPTConfig import GPTConfig
 
 
@@ -126,6 +126,10 @@ class GPT(nn.Module):
                 torch.nn.init.zeros_(module.bias)
         elif isinstance(module, nn.Embedding):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
+            
+    def init_lora_weights(self, module, rank=1, alpha=1):
+        if isinstance(module, nn.Linear):
+            LoRAParametrization.inject_lora_weights(module, rank=1, alpha=1)
 
     def configure_optimizers(self, weight_decay, learning_rate, device_type, master_process):
         # start with all of the candidate parameters (that require grad)

@@ -11,5 +11,9 @@
     "load_weights": "official",
     "ckpt_path": "", 
 
-    "num_return_sequences": 4
+    "num_return_sequences": 4,
+
+    "lora": false, 
+    "lora_alpha": 1,
+    "lora_rank": 1
 }

@@ -48,7 +48,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     data_format = data_config['data_format']
     # gpt configs
     use_compile = gpt_config['use_compile']
-    assert gpt_config['kv_cache'] == False, f'kv_cache is {gpt_config['kv_cache']} which is not valid in training'
+    assert gpt_config['kv_cache'] == False, f"kv_cache is {gpt_config['kv_cache']} which is not valid in training"
     num_return_sequences = 4 if gpt_config['load_weights'] == 'official' else num_return_sequences
     assert num_return_sequences == gpt_config['num_return_sequences']
     gpt_config['n_group_head'] = 1 if gpt_config['load_weights'] == 'official' else gpt_config['n_group_head']

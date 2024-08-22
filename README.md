@@ -1,4 +1,4 @@
-## lanuch training task
+## lanuch training task:
 ```bash
 # [reference]: https://www.youtube.com/watch?v=KaAJtI1T2x4&list=PL_lsbAsL_o2CSuhUhJIiW0IkdT5C2wGWj
 ```
@@ -28,7 +28,7 @@ torchrun --nproc_per_node=8 --nnodes=2 -node_rank=0 --rdzv_backend=c10d --rdzv_e
 torchrun --nproc_per_node=8 --nnodes=2 -node_rank=1 --rdzv_backend=c10d --rdzv_endpoint=xxx.xxx.xxx.xxx:xxxx train/main.py --dp_world_size 16
 ```
 
-## lanuch generation task
+## lanuch generation task:
 ```bash
 python gen/main.py
 ```
@@ -46,7 +46,7 @@ gpt2-largen_layer=36, n_head=20, n_embd=1280  # 774M params
 ### gpt2-xl
 n_layer=48, n_head=25, n_embd=1600  # 1558M params
 
-## env configuration
+## env configuration:
 ### env pytorch
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
@@ -69,6 +69,6 @@ url https://pypi.nvidia.com
 
 pip install -r ./requirements.txt
 
-## some useful links
+## some useful links:
 ### quant
 https://chatgpt.com/share/31aa8af3-dce2-457f-85db-2b18b3c242ce

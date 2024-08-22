@@ -48,6 +48,7 @@ n_layer=48, n_head=25, n_embd=1600  # 1558M params
 
 ## env configuration:
 ### env pytorch
+```bash
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 pip install transformers==4.44.0
@@ -55,9 +56,12 @@ pip install transformers==4.44.0
 pip install tiktoken==0.7.0
 
 pip install tqdm==4.66.5
+```
 
 ### tensorrt-llm
+```bash
 cd TensorRT-LLM/examples/bloom
+
 pip install torch torchvision torchaudio (2.4.0, cuda 12.1)
 
 conda install -y mpi4py
@@ -68,6 +72,7 @@ pip install tensorrt_llm==0.13.0.dev2024081300 --extra-index-
 url https://pypi.nvidia.com
 
 pip install -r ./requirements.txt
+```
 
 ## some useful links:
 ### quant

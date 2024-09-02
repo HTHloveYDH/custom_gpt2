@@ -38,9 +38,9 @@ class CausalSelfAttention(nn.Module):
         q, k, v = qkv.split(
             [self.n_embd, self.n_embd // self.n_group_head, self.n_embd // self.n_group_head], dim=2
         )  # (B, T, C), (B, T, C // ngh), (B, T, C // ngh)
-        # q = q.view(B, T, self.n_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh, T, hs)
-        # k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
-        # v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
+        # q = q.view(B, T, self.n_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh, T, hs)
+        # k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
+        # v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(1, 2)  # (B, nh // ngh, T, hs)
         v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(1, 2)  # (B, nh // ngh, T, hs)
@@ -117,9 +117,9 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         q, k, v = qkv.split(
             [self.n_embd, self.n_embd // self.n_group_head, self.n_embd // self.n_group_head], dim=2
         )  # (B, T, C), (B, T, C // ngh), (B, T, C // ngh)
-        # q = q.view(B, T, self.n_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh, T, hs)
-        # k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
-        # v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
+        # q = q.view(B, T, self.n_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh, T, hs)
+        # k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
+        # v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).permute(0, 2, 1, 3)  # (B, nh // ngh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
         k = k.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(1, 2)  # (B, nh // ngh, T, hs)
         v = v.view(B, T, self.n_head // self.n_group_head, C // self.n_head).transpose(1, 2)  # (B, nh // ngh, T, hs)

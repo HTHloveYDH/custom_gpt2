@@ -3,10 +3,10 @@ from torch.nn import functional as F
 
 
 def gen_sentences_v1(model, enc, xgen, device, device_type, num_return_sequences:int, \
-            max_length:int, dp_rank:int):
+                     max_length:int, dp_global_rank:int):
     model.eval()
     sample_rng = torch.Generator(device=device)
-    sample_rng.manual_seed(42 + dp_rank)
+    sample_rng.manual_seed(42 + dp_global_rank)
     while xgen.size(1) < max_length:
         # forward the model to get the logits
         with torch.no_grad():
@@ -31,13 +31,13 @@ def gen_sentences_v1(model, enc, xgen, device, device_type, num_return_sequences
         tokens = xgen[i, :max_length].tolist()
         decoded = enc.decode(tokens)
         print('generated sentences: ')
-        print(f"rank {dp_rank} sample {i}: {decoded}")
+        print(f"rank {dp_global_rank} sample {i}: {decoded}")
 
 def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences:int, \
-            max_length:int, dp_rank:int):
+                     max_length:int, dp_global_rank:int):
     model.eval()
     sample_rng = torch.Generator(device=device)
-    sample_rng.manual_seed(42 + dp_rank)
+    sample_rng.manual_seed(42 + dp_global_rank)
     xcol = xgen
     while xgen.size(1) < max_length:
         # forward the model to get the logits
@@ -63,4 +63,4 @@ def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences
         tokens = xgen[i, :max_length].tolist()
         decoded = enc.decode(tokens)
         print('generated sentences: ')
-        print(f"rank {dp_rank} sample {i}: {decoded}")
+        print(f"rank {dp_global_rank} sample {i}: {decoded}")

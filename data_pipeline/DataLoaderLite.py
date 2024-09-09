@@ -46,7 +46,7 @@ class NpyDataLoaderLite(BaseDataLoaderLite):
         split_files = [file for file in files if split in file]
         split_files = sorted(split_files)
         split_files = [os.path.join(data_root, file) for file in split_files]
-        self.split_files = split_files
+        self.shards = split_files
         assert len(split_files) > 0, f"no shards found for split {split}"
         if master_process:
             print(f"found {len(split_files)} shards for split {split}")
@@ -89,7 +89,7 @@ class JsonDataLoaderLite(BaseDataLoaderLite):
         split_files = [file for file in files if split in file]
         split_files = sorted(split_files)
         split_files = [os.path.join(data_root, file) for file in split_files]
-        self.split_files = split_files
+        self.shards = split_files
         assert len(split_files) > 0, f"no shards found for split {split}"
         if master_process:
             print(f"found {len(split_files)} shards for split {split}")

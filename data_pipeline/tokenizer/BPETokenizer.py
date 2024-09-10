@@ -9,10 +9,10 @@ But:
 - Does not handle any special tokens.
 """
 
-from .base import Tokenizer, get_stats, merge
+from .BaseTokenizer import BaseTokenizer, get_stats, merge
 
 
-class BPETokenizer(Tokenizer):
+class BPETokenizer(BaseTokenizer):
 
     def __init__(self):
         super().__init__()

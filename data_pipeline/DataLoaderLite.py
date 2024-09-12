@@ -12,7 +12,7 @@ class BaseDataLoaderLite:
         self.T = T
         self.process_rank = process_rank
         self.num_processes = num_processes
-        self.enc = tiktoken.get_encoding('gpt2')
+        self.tokenizer = tiktoken.get_encoding('gpt2')
 
     def reset(self):
         # state, init at shard zero
@@ -76,7 +76,7 @@ class TxtDataLoaderLite(BaseDataLoaderLite):
     def load_tokens(self, filename:str):
         with open(filename, 'r') as f:
             text = f.read()
-        tokens = self.enc.encode(text)
+        tokens = self.tokenizer.encode(text)
         tensor_tokens = torch.tensor(tokens, dtype=torch.long)
         return tensor_tokens
 
@@ -99,6 +99,6 @@ class JsonDataLoaderLite(BaseDataLoaderLite):
         with open(filename, 'r') as f:
             json_content = json.load(f)
         text = json_content['text']
-        tokens = self.enc.encode(text)
+        tokens = self.tokenizer.encode(text)
         tensor_tokens = torch.tensor(tokens, dtype=torch.long)
         return tensor_tokens

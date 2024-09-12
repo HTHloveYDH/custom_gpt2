@@ -1,8 +1,7 @@
 import pytest
 import os
 
-from data_pipeline.tokenizer.BPETokenizer import BPETokenizer
-from data_pipeline.tokenizer.RegexBPETokenizer import RegexBPETokenizer
+from data_pipeline.BPETokenizer import BPETokenizer, RegexBPETokenizer
 
 # -----------------------------------------------------------------------------
 # common test data

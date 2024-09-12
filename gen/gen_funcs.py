@@ -2,7 +2,7 @@ import torch
 from torch.nn import functional as F
 
 
-def gen_sentences_v1(model, enc, xgen, device, device_type, num_return_sequences:int, \
+def gen_sentences_v1(model, tokenizer, xgen, device, device_type, num_return_sequences:int, \
                      max_length:int, dp_global_rank:int):
     model.eval()
     sample_rng = torch.Generator(device=device)
@@ -29,11 +29,11 @@ def gen_sentences_v1(model, enc, xgen, device, device_type, num_return_sequences
     # print the generated text
     for i in range(num_return_sequences):
         tokens = xgen[i, :max_length].tolist()
-        decoded = enc.decode(tokens)
+        decoded = tokenizer.decode(tokens)
         print('generated sentences: ')
         print(f"rank {dp_global_rank} sample {i}: {decoded}")
 
-def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences:int, \
+def gen_sentences_v2(model, tokenizer, xgen, device, device_type, num_return_sequences:int, \
                      max_length:int, dp_global_rank:int):
     model.eval()
     sample_rng = torch.Generator(device=device)
@@ -61,6 +61,6 @@ def gen_sentences_v2(model, enc, xgen, device, device_type, num_return_sequences
     # print the generated text
     for i in range(num_return_sequences):
         tokens = xgen[i, :max_length].tolist()
-        decoded = enc.decode(tokens)
+        decoded = tokenizer.decode(tokens)
         print('generated sentences: ')
         print(f"rank {dp_global_rank} sample {i}: {decoded}")

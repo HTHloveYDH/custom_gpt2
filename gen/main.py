@@ -3,6 +3,7 @@ import sys
 import time
 
 import torch
+import tiktoken
 
 sys.path.append(os.getcwd())
 from dist.distribute import init_dist, ternimate_dist
@@ -42,17 +43,19 @@ def main():
 
     ''' ____________________________________ build & compile model ___________________________________ '''
     device_ids = [dp_local_rank]
-    model, raw_model, enc = get_model(gpt_config, device, dist_strategy, device_ids)
+    model, raw_model = get_model(gpt_config, device, dist_strategy, device_ids)
 
     ''' ____________________________________________ test ___________________________________________ '''
     gen_sentences = {'v1': gen_sentences_v1, 'v2': gen_sentences_v2}[gen_func]
-    tokens = enc.encode(gen_config['prompt'])
+    # get tokenizer
+    tokenizer = tiktoken.get_encoding('gpt2')
+    tokens = tokenizer.encode(gen_config['prompt'])
     tokens = torch.tensor(tokens, dtype=torch.long)
     tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
     x = tokens.to(device)
     t0 = time.time()
     gen_sentences(
-        model, enc, x, device, device_type, num_return_sequences, max_length, dp_global_rank
+        model, tokenizer, x, device, device_type, num_return_sequences, max_length, dp_global_rank
     )
     print('time cost for generating sentences: ', time.time() - t0, ' seconds')
     ternimate_dist(dist_strategy)

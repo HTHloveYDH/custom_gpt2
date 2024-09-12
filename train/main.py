@@ -4,6 +4,7 @@ import argparse
 
 import torch
 import torch.multiprocessing as mp
+import tiktoken
 
 sys.path.append(os.getcwd())
 from dist.distribute import init_dist, ternimate_dist
@@ -92,11 +93,13 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
 
     ''' ____________________________________ build & compile model ___________________________________ '''
     device_ids = [dp_local_rank]
-    model, raw_model, enc = get_model(gpt_config, device, dist_strategy, device_ids)
+    model, raw_model = get_model(gpt_config, device, dist_strategy, device_ids)
 
     ''' ____________________________________________ train ___________________________________________ '''
     # get optimizer
     optimizer = get_optimizer(raw_model, weight_decay, learning_rate, device_type, master_process)
+    # get tokenizer
+    tokenizer = tiktoken.get_encoding('gpt2')
     # start train loop
     max_grad_accum_stages = epochs * grad_accum_stages_per_epoch
     max_steps = max_grad_accum_stages * grad_accum_steps
@@ -119,12 +122,12 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
                 )
             # once in a while generate from the model (except step 0, which is noise)
             if (global_grad_accum_stage % save_interval == 0 or last_grad_accum_stage) and (not use_compile):
-                tokens = enc.encode("Hello, I'm a language model,")
+                tokens = tokenizer.encode("Hello, I'm a language model,")
                 tokens = torch.tensor(tokens, dtype=torch.long)
                 tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
                 x = tokens.to(device)
                 gen_sentences(
-                    model, enc, x, device, device_type, num_return_sequences, max_length, dp_global_rank
+                    model, tokenizer, x, device, device_type, num_return_sequences, max_length, dp_global_rank
                 )
     # terminate process group
     ternimate_dist(dist_strategy)

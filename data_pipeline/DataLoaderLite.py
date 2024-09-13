@@ -34,7 +34,7 @@ class BaseDataLoaderLite:
             self.current_position = B * T * self.process_rank
         return x, y
     
-    def load_tokens(self, data:str):
+    def load_tokens(self, filename:str):
         NotImplementedError(" Can not call 'load_tokens' via base class 'BaseDataLoaderLite'! ")
 
 class NpyDataLoaderLite(BaseDataLoaderLite):

@@ -42,8 +42,7 @@ def main():
     torch.set_float32_matmul_precision('high')
 
     ''' ____________________________________ build & compile model ___________________________________ '''
-    device_ids = [dp_local_rank]
-    model, raw_model = get_model(gpt_config, device, dist_strategy, device_ids)
+    model, raw_model = get_model(gpt_config, device, dist_strategy, dp_local_rank)
 
     ''' ____________________________________________ test ___________________________________________ '''
     gen_sentences = {'v1': gen_sentences_v1, 'v2': gen_sentences_v2}[gen_func]

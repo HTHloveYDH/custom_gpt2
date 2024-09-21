@@ -92,8 +92,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     )
 
     ''' ____________________________________ build & compile model ___________________________________ '''
-    device_ids = [dp_local_rank]
-    model, raw_model = get_model(gpt_config, device, dist_strategy, device_ids)
+    model, raw_model = get_model(gpt_config, device, dist_strategy, dp_local_rank)
 
     ''' ____________________________________________ train ___________________________________________ '''
     # get optimizer

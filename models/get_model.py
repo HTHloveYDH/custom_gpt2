@@ -18,7 +18,7 @@ from models.GPT import GPT
 from config.GPTConfig import GPTConfig
 
 
-def get_model(gpt_config:dict, device, dist_strategy:str, dp_local_rank:int):
+def get_model(gpt_config:dict, device, dist_strategy:str):
     assert gpt_config['load_weights'] in ['official', 'local', None], f"load weights: {gpt_config['load_weights']}  is not supported"
     # create model
     if gpt_config['load_weights'] == 'official':
@@ -47,7 +47,7 @@ def get_model(gpt_config:dict, device, dist_strategy:str, dp_local_rank:int):
     if use_compile:
         model = torch.compile(model)
     if dist_strategy == 'ddp':
-        model = DDP(model, device_ids=[dp_local_rank])
+        model = DDP(model, device_ids=[device])
     elif dist_strategy == 'fsdp':
         # reference: https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html#how-to-use-fsdp
         model = FSDP(model)

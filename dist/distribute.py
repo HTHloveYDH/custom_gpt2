@@ -29,7 +29,7 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
         device = f'cuda:{dp_local_rank}'
         torch.cuda.set_device(device)
         print(f"using device: {device}")
-    elif dist_strategy in ['default']:
+    elif dist_strategy == 'default':
         # vanilla, non-DDP run
         dp_global_rank = 0
         dp_local_rank = 0

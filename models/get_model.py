@@ -18,7 +18,7 @@ from models.GPT import GPT
 from config.GPTConfig import GPTConfig
 
 
-def get_model(gpt_config:dict, device, dist_strategy:str):
+def get_model(gpt_config:dict, device, dist_type:str):
     assert gpt_config['load_weights'] in ['official', 'local', None], f"load weights: {gpt_config['load_weights']}  is not supported"
     # create model
     if gpt_config['load_weights'] == 'official':
@@ -46,15 +46,15 @@ def get_model(gpt_config:dict, device, dist_strategy:str):
     use_compile = False # torch.compile interferes with HellaSwag eval and Generation. TODO fix
     if use_compile:
         model = torch.compile(model)
-    if dist_strategy == 'ddp':
+    if dist_type == 'ddp':
         model = DDP(model, device_ids=[device])
-    elif dist_strategy == 'fsdp':
+    elif dist_type == 'fsdp':
         # reference: https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html#how-to-use-fsdp
         model = FSDP(model)
         # my_auto_wrap_policy = functools.partial(size_based_auto_wrap_policy, min_num_params=100)
         # model = FSDP(
         #     model, auto_wrap_policy=my_auto_wrap_policy, cpu_offload=CPUOffload(offload_params=True)
         # )
-    print(f'distribute strategy is set to {dist_strategy}')
-    raw_model = model.module if dist_strategy in ['ddp', 'fsdp'] else model # always contains the "raw" unwrapped model
+    print(f'distribute strategy is set to {dist_type}')
+    raw_model = model.module if dist_type in ['ddp', 'fsdp'] else model # always contains the "raw" unwrapped model
     return model, raw_model

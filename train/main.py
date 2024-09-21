@@ -26,8 +26,8 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     # load configs
     gpt_config, train_config, data_config, cloud_config, dist_config = load_configs('train')
     # distribute configs
-    dist_strategy = dist_config['dist_strategy']
-    assert dist_strategy in ['ddp', 'fsdp', 'default'], f'distribute strategy: {dist_strategy} is not supported'
+    dist_type = dist_config['dist_type']
+    assert dist_type in ['ddp', 'fsdp', 'default'], f'distribute strategy: {dist_type} is not supported'
     # train configs
     learning_rate = train_config['learning_rate']  # defaults to 6e-4
     weight_decay = train_config['weight_decay']  # defaults to 0.1
@@ -55,9 +55,9 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     gpt_config['n_group_head'] = 1 if gpt_config['load_weights'] == 'official' else gpt_config['n_group_head']
     # set up DP (distributed data parallel or fully sharded data parallel) process group.
     # torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
-    dp = dist_strategy in ['ddp', 'fsdp']
+    dp = dist_type in ['ddp', 'fsdp']
     dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type = init_dist(
-        dist_strategy, torch_mp_launch, dp_local_rank, dp_world_size
+        dist_type, torch_mp_launch, dp_local_rank, dp_world_size
     )
     # set random seed
     torch.manual_seed(seed)
@@ -92,7 +92,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
     )
 
     ''' ____________________________________ build & compile model ___________________________________ '''
-    model, raw_model = get_model(gpt_config, device, dist_strategy)
+    model, raw_model = get_model(gpt_config, device, dist_type)
 
     ''' ____________________________________________ train ___________________________________________ '''
     # get optimizer
@@ -129,7 +129,7 @@ def main(dp_local_rank=0, dp_world_size=1, torch_mp_launch=False):
                     model, tokenizer, x, device, device_type, num_return_sequences, max_length, dp_global_rank
                 )
     # terminate process group
-    ternimate_dist(dist_strategy)
+    ternimate_dist(dist_type)
 
 
 if __name__ == '__main__':

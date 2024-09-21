@@ -6,10 +6,10 @@ from torch.distributed import init_process_group, destroy_process_group
 from dist.device import get_devices
 
 
-def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
+def init_dist(dist_type:str, torch_mp_launch:bool, dp_local_rank:int, dp_world_size:int):
     visible_devices = get_devices('cuda')
     print(f'{len(visible_devices)} visible devices: ', visible_devices, ' detected.')
-    if dist_strategy in ['ddp', 'fsdp']:
+    if dist_type in ['ddp', 'fsdp']:
         # use of FSDP or DDP demands CUDA, we set the device appropriately according to rank
         assert torch.cuda.is_available(), 'for now i think we need CUDA for DDP or FSDP'
         # launch by torch.multiprocessing
@@ -29,7 +29,7 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
         device = f'cuda:{dp_local_rank}'
         torch.cuda.set_device(device)
         print(f"using device: {device}")
-    elif dist_strategy == 'default':
+    elif dist_type == 'default':
         # vanilla, non-DDP run
         dp_global_rank = 0
         dp_local_rank = 0
@@ -45,8 +45,8 @@ def init_dist(dist_strategy:str, torch_mp_launch:bool, dp_local_rank:int, dp_wor
     device_type = 'cuda' if device.startswith('cuda') else 'cpu'
     return dp_global_rank, dp_local_rank, dp_world_size, master_process, device, device_type
 
-def ternimate_dist(dist_strategy:str):
-    if dist_strategy in ['ddp', 'fsdp']:
+def ternimate_dist(dist_type:str):
+    if dist_type in ['ddp', 'fsdp']:
         destroy_process_group()
     else:
         pass

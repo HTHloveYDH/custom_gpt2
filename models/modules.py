@@ -165,8 +165,8 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         return y
 
     def shift_cache(self):
-        # self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), not efficient
-        # self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), not efficient
+        # self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), O(block_size), not efficient
+        # self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), O(block_size), not efficient
         self.k_cache = torch.cat(
             [
                 self.k_cache[:, :, 1:, :],

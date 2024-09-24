@@ -137,7 +137,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         # input x is newly generated token of shape (B, T = 1, C) in last inference
         else:
             if self.next_token_idx == self.block_size:   
-                self.shift_cache()  # shift k_cache, v_cache
+                self._shift_cache()  # shift k_cache, v_cache
             # suppose T_gen is length of generated sentence in current slide window (length = 1024) by far
             T_gen = self.next_token_idx + 1
             self.k_cache[:, :, self.next_token_idx:T_gen, :] = k  # (B, nh, block_size, hs), k is of shape (B, nh, T = 1, hs)
@@ -164,7 +164,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         y = att @ v  # (B, nh, T = 1, T_gen) @ (B, nh, T_gen, hs) -> (B, nh, T = 1, hs), nh * hs = C = n_embd
         return y
 
-    def shift_cache(self):
+    def _shift_cache(self):
         # self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), O(block_size), not efficient
         # self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), O(block_size), not efficient
         self.k_cache = torch.cat(

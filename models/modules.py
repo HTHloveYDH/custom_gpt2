@@ -165,8 +165,28 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
         return y
 
     def shift_cache(self):
-        self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
-        self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs)
+        # self.k_cache[:, :, :-1, :] = self.k_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), not efficient
+        # self.v_cache[:, :, :-1, :] = self.v_cache[:, :, 1:, :]  # (B, nh, self.block_size, hs), not efficient
+        self.k_cache = torch.cat(
+            [
+                self.k_cache[:, :, 1:, :],
+                torch.zeros(
+                    (self.k_cache.shape[0], self.k_cache.shape[1], 1, self.k_cache.shape[3]),
+                    device=self.k_cache.device
+                )
+            ],
+            dim=2
+        )
+        self.v_cache = torch.cat(
+            [
+                self.v_cache[:, :, 1:, :],
+                torch.zeros(
+                    (self.v_cache.shape[0], self.v_cache.shape[1], 1, self.v_cache.shape[3]),
+                    device=self.v_cache.device
+                )
+            ],
+            dim=2
+        )
         self.next_token_idx = self.block_size - 1
 
 class TanhGELU(nn.Module):

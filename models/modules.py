@@ -176,7 +176,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
                 )
             ],
             dim=2
-        )
+        )  # O(1), efficient
         self.v_cache = torch.cat(
             [
                 self.v_cache[:, :, 1:, :],
@@ -186,7 +186,7 @@ class KVCacheCausalSelfAttention(CausalSelfAttention):
                 )
             ],
             dim=2
-        )
+        )  # O(1), efficient
         self.next_token_idx = self.block_size - 1
 
 class TanhGELU(nn.Module):
